@@ -1,0 +1,210 @@
+///*
+// * Copyright 2016 University of Basel, Graphics and Vision Research Group
+// *
+// * Licensed under the Apache License, Version 2.0 (the "License");
+// * you may not use this file except in compliance with the License.
+// * You may obtain a copy of the License at
+// *
+// *     http://www.apache.org/licenses/LICENSE-2.0
+// *
+// * Unless required by applicable law or agreed to in writing, software
+// * distributed under the License is distributed on an "AS IS" BASIS,
+// * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// * See the License for the specific language governing permissions and
+// * limitations under the License.
+// */
+//package scalismo.mesh
+//
+//import scalismo.common.UnstructuredPointsDomain.Create.CreateUnstructuredPointsDomain2D
+//import scalismo.common.{PointId, RealSpace}
+//import scalismo.geometry._
+//import scalismo.image.{DifferentiableScalarImage, ScalarImage}
+//import scalismo.mesh.boundingSpheres._
+//import scalismo.utils.MeshConversion
+//
+//object LineMeshOperations {
+//  def apply(mesh: LineMesh2D) = new LineMesh2DOperations(mesh)
+//}
+//
+//class LineMesh2DOperations(private val mesh: LineMesh2D) {
+//
+//  /**
+//    * Calculated data from mesh
+//    */
+//  private lazy val meshPoints = mesh.pointSet.points.toIndexedSeq
+//
+//  /**
+//    * Bounding spheres based mesh operations
+//    */
+//  private lazy val triangles = BoundingSpheres.triangleListFromTriangleMesh3D(mesh)
+//  private lazy val boundingSpheres = BoundingSpheres.createForTriangles(triangles)
+//
+//  private lazy val intersect: TriangulatedSurfaceIntersectionIndex[_3D] = new LineTriangleMesh3DIntersectionIndex(boundingSpheres, mesh, triangles)
+//  def hasIntersection(point: Point[_3D], direction: EuclideanVector[_3D]): Boolean = intersect.hasIntersection(point, direction)
+//  def getIntersectionPoints(point: Point[_3D], direction: EuclideanVector[_3D]): Seq[Point[_3D]] = intersect.getIntersectionPoints(point, direction)
+//  def getIntersectionPointsOnSurface(point: Point[_3D], direction: EuclideanVector[_3D]): Seq[(TriangleId, BarycentricCoordinates)] = intersect.getSurfaceIntersectionPoints(point, direction)
+//
+//  private lazy val closestPointOnSurface: SurfaceSpatialIndex[_3D] =
+//    new TriangleMesh3DSpatialIndex(boundingSpheres, mesh, triangles)
+//  def shortestDistanceToSurfaceSquared(point: Point[_3D]): Double =
+//    closestPointOnSurface.getSquaredShortestDistance(point: Point[_3D])
+//  def closestPoint(point: Point[_3D]): ClosestPoint = closestPointOnSurface.getClosestPoint(point)
+//  def closestPointOnSurface(point: Point[_3D]): ClosestPointWithType =
+//    closestPointOnSurface.getClosestPointOnSurface(point)
+//
+//  /**
+//    * Boundary predicates
+//    */
+//  private lazy val boundary: TriangularMeshBoundaryPredicates = MeshBoundaryPredicates(mesh)
+//  def pointIsOnBoundary(pid: PointId): Boolean = boundary.pointIsOnBoundary(pid)
+//  def edgeIsOnBoundary(pid1: PointId, pid2: PointId): Boolean = boundary.edgeIsOnBoundary(pid1, pid2)
+//  def triangleIsOnBoundary(tid: TriangleId): Boolean = boundary.triangleIsOnBoundary(tid: TriangleId)
+//
+//  /**
+//    * Returns a new [[LineMesh]] where all points satisfying the given predicate are removed.
+//    * All cells containing deleted points are also deleted.
+//    * @todo use MeshCompactifier to express this functionality. But first verify and test that it remains the same.
+//    */
+//  def clip(clipPointPredicate: Point[_2D] => Boolean): LineMesh[_2D] = {
+//    // predicate tested at the beginning, once.
+//    val remainingPoints = meshPoints.par.filter { !clipPointPredicate(_) }.zipWithIndex.toMap
+//
+//    val remainingPointTriplet = mesh.cells.par
+//      .map { cell =>
+//        val points = cell.pointIds.map(pointId => meshPoints(pointId.id))
+//        (points, points.map(p => remainingPoints.get(p).isDefined).reduce(_ && _))
+//      }
+//      .filter(_._2)
+//      .map(_._1)
+//
+//    val points = remainingPointTriplet.flatten.distinct
+//    val pt2Id = points.zipWithIndex.toMap
+//    val cells = remainingPointTriplet.map {
+//      case vec => LineCell(PointId(pt2Id(vec(0))), PointId(pt2Id(vec(1))))
+//    }
+//
+//    LineMesh2D(CreateUnstructuredPointsDomain2D.create(points.toIndexedSeq), LineList(cells.toIndexedSeq))
+//  }
+//
+//  /**
+//    * Returns a new continuous [[DifferentiableScalarImage]] defined on 2-dimensional [[RealSpace]] which is the distance transform of the mesh
+//    */
+//  def toDistanceImage: DifferentiableScalarImage[_2D, Float] = {
+//    def dist(pt: Point[_2D]): Float = Math.sqrt(shortestDistanceToSurfaceSquared(pt)).toFloat
+//
+//    def grad(pt: Point[_2D]) = {
+//      val closestPt = closestPoint(pt).point
+//      val grad = EuclideanVector(pt(0) - closestPt(0), pt(1) - closestPt(1))
+//      grad * (1.0 / grad.norm)
+//    }
+//
+//    DifferentiableScalarImage(RealSpace[_2D], (pt: Point[_2D]) => dist(pt), (pt: Point[_2D]) => grad(pt))
+//  }
+//
+//  /**
+//    * Returns a new continuous binary [[ScalarImage]] defined on 3-dimensional [[RealSpace]] , where the mesh surface is used to split the image domain.
+//    * Points lying on the space side pointed towards by the surface normals will have value 0. Points lying on the other side have
+//    * value 1. Hence if the mesh is a closed surface, points inside the surface have value 1 and points outside 0.
+//    *
+//    */
+//  def toBinaryImage: ScalarImage[_2D, Short] = {
+//
+//    val meshOps = mesh.operations
+//
+//    def inside(pt: Point[_2D]): Short = {
+//      val (closestPoint, normalAtClosestPoint) = meshOps.closestPointOnSurface(pt) match {
+//        case ClosestPointInTriangle(closestPoint, dist, triangleId, bcc) => {
+//          (closestPoint, mesh.vertexNormals.onSurface(triangleId, bcc))
+//        }
+//        case ClosestPointOnLine(closestPoint, _, (id1, id2), bc) => {
+//          val normalPt1 = mesh.vertexNormals(id1)
+//          val normalPt2 = mesh.vertexNormals(id2)
+//          val averagedNormal = (normalPt1 * bc) + (normalPt2 * (1.0 - bc))
+//          (closestPoint, averagedNormal / averagedNormal.norm)
+//        }
+//        case _ => {
+//          val closestMeshPt = mesh.pointSet.findClosestPoint(pt)
+//          (closestMeshPt.point, mesh.vertexNormals(closestMeshPt.id))
+//        }
+//      }
+//      val dotprod = normalAtClosestPoint dot (closestPoint - pt)
+//      if (dotprod > 0.0) 1 else 0
+//    }
+//    ScalarImage(RealSpace[_2D], (pt: Point[_2D]) => inside(pt))
+//  }
+//
+//  /**
+//    * mask points behind clipping plane
+//    *
+//    * @param point  point in clipping plane
+//    * @param normal normal vector of clipping plane
+//    */
+//  def maskWithPlane(point: Point[_2D], normal: EuclideanVector[_2D]): MeshCompactifier = {
+//    val n = normal.normalize
+//    maskPoints((pid: PointId) => (mesh.pointSet.point(pid) - point).dot(n) >= 0.0)
+//  }
+//
+//  /**
+//    * Mask reduces the pointSet and triangulation of a mesh to keep only those parts
+//    * that evaluate to true for the passed in predicate.
+//    * @param pointFilter predicate that maps 3d locations to boolean ('true' = keep location).
+//    */
+//  def maskSpatially(pointFilter: (Point[_2D]) => Boolean): MeshCompactifier = {
+//    mask((pid: PointId) => pointFilter(mesh.pointSet.point(pid)), _ => true)
+//  }
+//
+//  /**
+//    * Mask reduces the pointSet and triangulation of a mesh to keep only those parts
+//    * that evaluate to true for the passed in predicate.
+//    * @param pointFilter Predicate that maps PointId to boolean ('true' = keep location).
+//    */
+//  def maskPoints(pointFilter: (PointId) => Boolean): MeshCompactifier = {
+//    mask(pointFilter, _ => true)
+//  }
+//
+//  /**
+//    * Mask a mesh to a subset of the triangles.
+//    * @param triangleFilter Predicate that maps TriangleId to boolean ('true' = keep triangle).
+//    */
+//  def maskTriangles(triangleFilter: (TriangleId) => Boolean): MeshCompactifier = {
+//    mask(_ => true, triangleFilter)
+//  }
+//
+//  /**
+//    * Mask a mesh to a subset of points and triangles.
+//    * @param pointFilter Predicate that maps PointId to boolean ('true' = keep location).
+//    * @param lineFilter Predicate that maps TriangleId to boolean ('true' = keep triangle).
+//    */
+//  def mask(pointFilter: (PointId) => Boolean, lineFilter: (LineId) => Boolean): MeshCompactifier = {
+//    MeshCompactifier(mesh, pointFilter, lineFilter)
+//  }
+//
+//  /**
+//    * Reduces the triangle and points so that only used and valid locations and triangles remain.
+//    */
+//  def compact: MeshCompactifier = {
+//    mask(_ => true, _ => true)
+//  }
+//
+//  /**
+//    * Attempts to reduce the number of vertices of a mesh to the given number of vertices.
+//    *
+//    * @param targetedNumberOfVertices The targeted number of vertices. Note that it is not guaranteed
+//    *                                 that this number is reached exactly
+//    * @return The decimated mesh
+//    */
+//  def decimate(targetedNumberOfVertices: Int): LineMesh[_2D] = {
+//    val refVtk = MeshConversion.meshToVtkPolyData(mesh)
+//    val decimate = new vtk.vtkQuadricDecimation()
+//
+//    val reductionRate = 1.0 - (targetedNumberOfVertices / mesh.pointSet.numberOfPoints.toDouble)
+//
+//    decimate.SetTargetReduction(reductionRate)
+//
+//    decimate.SetInputData(refVtk)
+//    decimate.Update()
+//    val decimatedRefVTK = decimate.GetOutput()
+//    MeshConversion.vtkPolyDataToTriangleMesh(decimatedRefVTK).get
+//  }
+//
+//}
