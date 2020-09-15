@@ -19,12 +19,13 @@ package api.sampling.proposals
 import api.other.{DoubleProjection, IcpProjectionDirection, ModelSampling, TargetSampling}
 import api.sampling.{ModelFittingParameters, ShapeParameters, SurfaceNoiseHelpers}
 import apps.scalismoExtension.LineMeshOperator
-import breeze.linalg.{DenseMatrix, DenseVector, diag}
-import scalismo.common.{Field, NearestNeighborInterpolator, PointId}
+import breeze.linalg.{DenseVector, diag}
+import scalismo.common.interpolation.NearestNeighborInterpolator
+import scalismo.common.{Field, PointId}
 import scalismo.geometry._
 import scalismo.mesh.{LineMesh, LineMesh2D}
 import scalismo.sampling.{ProposalGenerator, TransitionProbability}
-import scalismo.statisticalmodel.{LowRankGaussianProcess, MultivariateNormalDistribution, StatisticalLineMeshModel, StatisticalMeshModel}
+import scalismo.statisticalmodel.{LowRankGaussianProcess, MultivariateNormalDistribution, StatisticalLineMeshModel}
 import scalismo.utils.Memoize
 
 case class NonRigidIcpProposal(
@@ -45,21 +46,18 @@ case class NonRigidIcpProposal(
                               ) extends ProposalGenerator[ModelFittingParameters]
   with TransitionProbability[ModelFittingParameters] {
   println(s"NonRigidICPProposal initializing, sampling: ${numOfSamplePoints} points")
-  private val referenceMesh = model.referenceMesh
-  private val cashedPosterior: Memoize[ModelFittingParameters, LowRankGaussianProcess[_2D, EuclideanVector[_2D]]] = Memoize(icpPosterior, 20)
-
   private lazy val interpolatedModel = model.gp.interpolate(NearestNeighborInterpolator())
-
-//  private val targetMesh = TriangleMesh3D(LineMeshConverter.PointDomain2Dto3D(target.pointSet).points.toIndexedSeq, TriangleList(IndexedSeq()))
-
-//  private val modelRefLine2D: LineMesh2D = model.referenceMesh//LineMeshConverter.pointCloudto2DLineMesh(model.referenceMesh.pointSet)
-  private val modelIds: IndexedSeq[PointId] = scala.util.Random.shuffle(model.referenceMesh.pointSet.pointIds.toIndexedSeq).take(numOfSamplePoints)
-//  private val targetPoints2D: IndexedSeq[Point[_2D]] = scala.util.Random.shuffle(target.pointSet.points.toIndexedSeq).take(numOfSamplePoints)
-  private val targetPoints2Dids: IndexedSeq[PointId] = scala.util.Random.shuffle(target.pointSet.pointIds.toIndexedSeq).take(numOfSamplePoints)
-
   val commonNames = modelLMs.map(_.id) intersect targetLMs.map(_.id)
   val landmarksPairs = commonNames.map(name => (modelLMs.find(_.id == name).get, targetLMs.find(_.id == name).get))
-  val correspondenceLandmarkPoints: IndexedSeq[(PointId, Point[_2D], MultivariateNormalDistribution, Boolean)] = landmarksPairs.map(f => (model.referenceMesh.pointSet.findClosestPoint(f._1.point).id, f._2.point,  MultivariateNormalDistribution(DenseVector.zeros[Double](2), diag(DenseVector.ones[Double](2))), false)).toIndexedSeq
+
+  //  private val targetMesh = TriangleMesh3D(LineMeshConverter.PointDomain2Dto3D(target.pointSet).points.toIndexedSeq, TriangleList(IndexedSeq()))
+  val correspondenceLandmarkPoints: IndexedSeq[(PointId, Point[_2D], MultivariateNormalDistribution, Boolean)] = landmarksPairs.map(f => (model.referenceMesh.pointSet.findClosestPoint(f._1.point).id, f._2.point, MultivariateNormalDistribution(DenseVector.zeros[Double](2), diag(DenseVector.ones[Double](2))), false)).toIndexedSeq
+  private val referenceMesh = model.referenceMesh
+  private val cashedPosterior: Memoize[ModelFittingParameters, LowRankGaussianProcess[_2D, EuclideanVector[_2D]]] = Memoize(icpPosterior, 20)
+  //  private val modelRefLine2D: LineMesh2D = model.referenceMesh//LineMeshConverter.pointCloudto2DLineMesh(model.referenceMesh.pointSet)
+  private val modelIds: IndexedSeq[PointId] = scala.util.Random.shuffle(model.referenceMesh.pointSet.pointIds.toIndexedSeq).take(numOfSamplePoints)
+  //  private val targetPoints2D: IndexedSeq[Point[_2D]] = scala.util.Random.shuffle(target.pointSet.points.toIndexedSeq).take(numOfSamplePoints)
+  private val targetPoints2Dids: IndexedSeq[PointId] = scala.util.Random.shuffle(target.pointSet.pointIds.toIndexedSeq).take(numOfSamplePoints)
 
   override def propose(theta: ModelFittingParameters): ModelFittingParameters = {
     val posterior = cashedPosterior(theta)
@@ -80,16 +78,16 @@ case class NonRigidIcpProposal(
 
 
   override def logTransitionProbability(from: ModelFittingParameters, to: ModelFittingParameters): Double = {
-// This is the right way to write the log transition - but doesn't work atm. for 2D linemeshes
-//    val pos = cashedPosterior(from)
-//    val posterior = StatisticalLineMeshModel.apply(referenceMesh, pos)
-//
-//    val compensatedTo = from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength
-//    val toMesh = model.instance(compensatedTo)
-//
-//    val projectedTo = posterior.coefficients(toMesh)
-//    pos.logpdf(projectedTo)
-//
+    // This is the right way to write the log transition - but doesn't work atm. for 2D linemeshes
+    //    val pos = cashedPosterior(from)
+    //    val posterior = StatisticalLineMeshModel.apply(referenceMesh, pos)
+    //
+    //    val compensatedTo = from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength
+    //    val toMesh = model.instance(compensatedTo)
+    //
+    //    val projectedTo = posterior.coefficients(toMesh)
+    //    pos.logpdf(projectedTo)
+    //
     val posterior = cashedPosterior(from)
 
     val compensatedTo = to.copy(shapeParameters = ShapeParameters(from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength))
@@ -100,7 +98,7 @@ case class NonRigidIcpProposal(
 
   private def icpPosterior(theta: ModelFittingParameters): LowRankGaussianProcess[_2D, EuclideanVector[_2D]] = {
     def modelBasedDoubleProjectionClosestPointsEstimation(
-                                                           currentMesh: LineMesh[_2D]//,
+                                                           currentMesh: LineMesh[_2D] //,
                                                            //inversePoseTransform: RigidTransformation[_2D]
                                                          ): IndexedSeq[(Point[_2D], EuclideanVector[_2D], MultivariateNormalDistribution)] = {
 
@@ -119,7 +117,7 @@ case class NonRigidIcpProposal(
           val targetNormal = if (LineMeshOperator(target).verifyNormalDirection(targetPoint.point, targetNormalInit)) targetNormalInit else targetNormalInit.*(-1.0)
           val isOnBoundary = idSet.contains(id) || (modelNormal2D dot targetNormal) <= 0 || (target.topology.adjacentPointsForPoint(targetPoint.id).length < 2)
 
-//          val isOnBoundary = idSet.contains(id) || normlen == 0.0
+          //          val isOnBoundary = idSet.contains(id) || normlen == 0.0
           idSet += id
 
           val noiseDistribution = SurfaceNoiseHelpers.surfaceNormalDependantNoise2D(modelNormal2D, noiseAlongNormal, tangentialNoise)
@@ -127,7 +125,7 @@ case class NonRigidIcpProposal(
       }
 
       val correspondenceFilteredInit = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
-      val correspondenceFiltered = if(useLandmarkCorrespondence) correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
+      val correspondenceFiltered = if (useLandmarkCorrespondence) correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
       //      println(s"ModelBasedClosestPoint, correspondence ${correspondenceFiltered.length}")
 
       for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
@@ -137,7 +135,7 @@ case class NonRigidIcpProposal(
     }
 
     def modelBasedClosestPointsEstimation(
-                                           currentMesh: LineMesh[_2D]//,
+                                           currentMesh: LineMesh[_2D] //,
                                            //inversePoseTransform: RigidTransformation[_2D]
                                          ): IndexedSeq[(Point[_2D], EuclideanVector[_2D], MultivariateNormalDistribution)] = {
 
@@ -159,7 +157,7 @@ case class NonRigidIcpProposal(
       }
 
       val correspondenceFilteredInit = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
-      val correspondenceFiltered = if(useLandmarkCorrespondence)correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
+      val correspondenceFiltered = if (useLandmarkCorrespondence) correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
 
       for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
         val referencePoint = model.referenceMesh.pointSet.point(pointId)
@@ -169,7 +167,7 @@ case class NonRigidIcpProposal(
 
 
     def targetBasedClosestPointsEstimation(
-                                            currentMesh: LineMesh[_2D]//,
+                                            currentMesh: LineMesh[_2D] //,
                                             //inversePoseTransform: RigidTransformation[_2D]
                                           ): IndexedSeq[(Point[_2D], EuclideanVector[_2D], MultivariateNormalDistribution)] = {
 
@@ -189,7 +187,7 @@ case class NonRigidIcpProposal(
       }
 
       val correspondenceFilteredInit = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
-      val correspondenceFiltered = if(useLandmarkCorrespondence)correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
+      val correspondenceFiltered = if (useLandmarkCorrespondence) correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
 
       for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
         val referencePoint = model.referenceMesh.pointSet.point(pointId)
@@ -199,23 +197,23 @@ case class NonRigidIcpProposal(
     }
 
     /**
-      * Estimate where points should move to together with a surface normal dependant noise.
-      *
-      * @param theta Current fitting parameters
-      * @return List of points, with associated deformation and normal dependant surface noise.
-      */
+     * Estimate where points should move to together with a surface normal dependant noise.
+     *
+     * @param theta Current fitting parameters
+     * @return List of points, with associated deformation and normal dependant surface noise.
+     */
     def uncertainDisplacementEstimation(theta: ModelFittingParameters)
     : IndexedSeq[(Point[_2D], EuclideanVector[_2D], MultivariateNormalDistribution)] = {
       val currentMesh = model.instance(theta.shapeParameters.parameters) //ModelFittingParameters.transformedMesh(model, theta)
-//      val inversePoseTransform = ModelFittingParameters.poseTransform(theta).inverse
+      //      val inversePoseTransform = ModelFittingParameters.poseTransform(theta).inverse
 
       if (projectionDirection == DoubleProjection) {
-        modelBasedDoubleProjectionClosestPointsEstimation(currentMesh)//, inversePoseTransform)
+        modelBasedDoubleProjectionClosestPointsEstimation(currentMesh) //, inversePoseTransform)
       }
       else if (projectionDirection == TargetSampling) {
-        targetBasedClosestPointsEstimation(currentMesh)//, inversePoseTransform)
+        targetBasedClosestPointsEstimation(currentMesh) //, inversePoseTransform)
       } else {
-        modelBasedClosestPointsEstimation(currentMesh)//, inversePoseTransform)
+        modelBasedClosestPointsEstimation(currentMesh) //, inversePoseTransform)
       }
     }
 

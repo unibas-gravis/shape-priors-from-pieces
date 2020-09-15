@@ -27,13 +27,12 @@ import scalismo.geometry._
 import scalismo.mesh.{LineMesh, LineMesh2D}
 import scalismo.sampling.DistributionEvaluator
 import scalismo.sampling.algorithms.MetropolisHastings
-import scalismo.sampling.evaluators.ProductEvaluator
+import scalismo.sampling.loggers.ChainStateLogger.implicits._
 import scalismo.sampling.loggers.{BestSampleLogger, ChainStateLoggerContainer}
 import scalismo.sampling.proposals.MixtureProposal
 import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.ui.api.SimpleAPI
 import scalismo.utils.Random
-import scalismo.sampling.loggers.ChainStateLogger.implicits._
-import scalismo.ui.api.{ScalismoUI, SimpleAPI, StatisticalMeshModelViewControls}
 
 
 class SamplingRegistration(model: StatisticalLineMeshModel, sample: LineMesh2D, modelUi: Option[SimpleAPI] = None, modelUiUpdateInterval: Int = 1000, acceptInfoPrintInterval: Int = 10000) {
@@ -63,11 +62,11 @@ class SamplingRegistration(model: StatisticalLineMeshModel, sample: LineMesh2D, 
     val sampleGroup = if (modelUi.isDefined) {
       Option(modelUi.get.createGroup("sampleGroup"))
     }
-    else{
+    else {
       None
     }
 
-      val samplingIterator = for ((theta, i) <- mhIt.zipWithIndex) yield {
+    val samplingIterator = for ((theta, i) <- mhIt.zipWithIndex) yield {
       if (i % modelUiUpdateInterval == 0 && i != 0) {
         logger.debug(" index: " + i + " LOG: " + bestSamplelogger.currentBestValue().get)
         val thetaToUse = if (acceptRejectLogger.logSamples.nonEmpty) {
@@ -81,17 +80,17 @@ class SamplingRegistration(model: StatisticalLineMeshModel, sample: LineMesh2D, 
         if (modelUi.isDefined) {
           modelUi.get.show(sampleGroup.get, currentSample, s"${i.toString}")
 
-//          val rigidTrans = ModelFittingParameters.poseTransform(thetaToUse)
-//          modelUi.get.shapeModelTransformationView.poseTransformationView.transformation = rigidTrans
-//          modelUi.get.shapeModelTransformationView.shapeTransformationView.coefficients = thetaToUse.shapeParameters.parameters
+          //          val rigidTrans = ModelFittingParameters.poseTransform(thetaToUse)
+          //          modelUi.get.shapeModelTransformationView.poseTransformationView.transformation = rigidTrans
+          //          modelUi.get.shapeModelTransformationView.shapeTransformationView.coefficients = thetaToUse.shapeParameters.parameters
         }
       }
       if (i % acceptInfoPrintInterval == 0 && i != 0) {
         acceptRejectLogger.writeLog()
         acceptRejectLogger.printAcceptInfo(jsonName.getName)
         val bestTheta = bestSamplelogger.currentBestSample().get
-//        val rigidTrans = ModelFittingParameters.poseTransform(bestTheta)
-        val bestStuff: LineMesh[_2D] = model.instance(bestTheta.shapeParameters.parameters)//.transform(rigidTrans)
+        //        val rigidTrans = ModelFittingParameters.poseTransform(bestTheta)
+        val bestStuff: LineMesh[_2D] = model.instance(bestTheta.shapeParameters.parameters) //.transform(rigidTrans)
         LineMeshMetrics2D.evaluateReconstruction2GroundTruthBoundaryAware("Sampling", bestStuff, sample)
       }
       theta

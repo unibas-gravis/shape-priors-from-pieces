@@ -38,7 +38,7 @@ case class JSONCPDExperimentLogger(filePath: File, modelPath: String = "") {
 
   import JsonCPDExperimentProtocol._
 
-  private val datetimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+  val experiments: ListBuffer[jsonCPDExperimentFormat] = new ListBuffer[jsonCPDExperimentFormat]
 
   if (!filePath.getParentFile.exists()) {
     throw new IOException(s"JSON log path does not exist: ${filePath.getParentFile.toString}!")
@@ -59,8 +59,7 @@ case class JSONCPDExperimentLogger(filePath: File, modelPath: String = "") {
   filePath.setReadable(true, false)
   filePath.setExecutable(true, false)
   filePath.setWritable(true, false)
-
-  val experiments: ListBuffer[jsonCPDExperimentFormat] = new ListBuffer[jsonCPDExperimentFormat]
+  private val datetimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
   def append(index: Int, targetPath: String = "", coeffCPD: Seq[Double], cpd: Map[String, Double], comment: String): Unit = {
     experiments += jsonCPDExperimentFormat(index = index, modelPath = modelPath, targetPath = targetPath, coeffCPD = coeffCPD,

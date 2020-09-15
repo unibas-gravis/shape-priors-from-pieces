@@ -1,16 +1,9 @@
 package apps.hands
 
-import java.awt.Color
 import java.io.File
 
-import api.sampling.ModelFittingParameters
-import api.sampling.loggers.{JSONAcceptRejectLogger, jsonLogFormat}
-import apps.scalismoExtension.LineMeshConverter
-import apps.util.{LogHelper2D, myPaths}
-import scalismo.common.PointId
-import scalismo.geometry._
-import scalismo.io.{MeshIO, StatisticalLineModelIO}
-import scalismo.mesh._
+import apps.util.myPaths
+import scalismo.io.StatisticalLineModelIO
 import scalismo.ui.api.ScalismoUI
 
 object VisualizeModelComponents {

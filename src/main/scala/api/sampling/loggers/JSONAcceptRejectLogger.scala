@@ -43,10 +43,10 @@ case class JSONAcceptRejectLogger[A](filePath: File, evaluators: Option[Map[Stri
 
   import JsonLoggerProtocol._
 
-  private var numOfRejected: Int = 0
-  private var numOfAccepted: Int = 0
-  private var generatedBy: SortedSet[String] = SortedSet()
+  val logSamples: ListBuffer[ModelFittingParameters] = new ListBuffer[ModelFittingParameters]
+  val logStatus: ListBuffer[jsonLogFormat] = new ListBuffer[jsonLogFormat]
   private val datetimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+  private var numOfRejected: Int = 0
 
   println(s"JSONAcceptRejectLogger parent file: ${filePath.getParentFile}")
   if (filePath.getParentFile != null) {
@@ -69,26 +69,8 @@ case class JSONAcceptRejectLogger[A](filePath: File, evaluators: Option[Map[Stri
   filePath.setReadable(true, false)
   filePath.setExecutable(true, false)
   filePath.setWritable(true, false)
-
-  def totalSamples: Int = numOfRejected + numOfAccepted
-
-  val logSamples: ListBuffer[ModelFittingParameters] = new ListBuffer[ModelFittingParameters]
-  val logStatus: ListBuffer[jsonLogFormat] = new ListBuffer[jsonLogFormat]
-
-  private def identifier(sample: A): String = {
-    val name = sample.asInstanceOf[ModelFittingParameters].generatedBy
-    generatedBy += name
-    name
-  }
-
-  private def mapEvaluators(sample: ModelFittingParameters, default: Double): Map[String, Double] = {
-    if (evaluators.isDefined) {
-      evaluators.get.map { case (name, eval) => (name, eval.logValue(sample)) }
-    }
-    else {
-      Map("product" -> default)
-    }
-  }
+  private var numOfAccepted: Int = 0
+  private var generatedBy: SortedSet[String] = SortedSet()
 
   override def accept(current: A, sample: A, generator: ProposalGenerator[A], evaluator: DistributionEvaluator[A]): Unit = {
     val locSample = sample.asInstanceOf[ModelFittingParameters]
@@ -105,20 +87,19 @@ case class JSONAcceptRejectLogger[A](filePath: File, evaluators: Option[Map[Stri
     numOfRejected += 1
   }
 
-  def percentRejected: Double = BigDecimal(numOfRejected.toDouble / totalSamples.toDouble).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
-
-  def percentAccepted: Double = 1.0 - percentRejected
-
-  def percentAcceptedOfType(id: String): Double = {
-    val filtered = logStatus.filter(f => f.name == id)
-    val accepted = filtered.filter(f => f.status)
-    accepted.length.toDouble / filtered.length.toDouble
+  private def identifier(sample: A): String = {
+    val name = sample.asInstanceOf[ModelFittingParameters].generatedBy
+    generatedBy += name
+    name
   }
 
-  def percentAcceptedOfTypeLocal(id: String, localLog:  ListBuffer[jsonLogFormat]): Double = {
-    val filtered = localLog.filter(f => f.name == id)
-    val accepted = filtered.filter(f => f.status)
-    accepted.length.toDouble / filtered.length.toDouble
+  private def mapEvaluators(sample: ModelFittingParameters, default: Double): Map[String, Double] = {
+    if (evaluators.isDefined) {
+      evaluators.get.map { case (name, eval) => (name, eval.logValue(sample)) }
+    }
+    else {
+      Map("product" -> default)
+    }
   }
 
   def writeLog(): Unit = {
@@ -133,13 +114,19 @@ case class JSONAcceptRejectLogger[A](filePath: File, evaluators: Option[Map[Stri
     println("Log written to: " + filePath.toString)
   }
 
+  def prettyPrint: String = {
+    logStatus.toIndexedSeq.toList.toJson.prettyPrint
+  }
+
+  def getBestFittingParsFromJSON: ModelFittingParameters = {
+    val loggerSeq = loadLog().filter(_.status)
+    val bestSample = loggerSeq.sortBy(f => f.logvalue("product")).reverse.head
+    sampleToModelParameters(bestSample)
+  }
+
   def loadLog(): IndexedSeq[jsonLogFormat] = {
     println(s"Loading JSON log file: ${filePath.toString}")
     Source.fromFile(filePath.toString).mkString.parseJson.convertTo[IndexedSeq[jsonLogFormat]]
-  }
-
-  def prettyPrint: String = {
-    logStatus.toIndexedSeq.toList.toJson.prettyPrint
   }
 
   def sampleToModelParameters(sample: jsonLogFormat): ModelFittingParameters = {
@@ -151,22 +138,34 @@ case class JSONAcceptRejectLogger[A](filePath: File, evaluators: Option[Map[Stri
     ModelFittingParameters(poseParameters = PoseParameters(translation, rotation, center), shapeParameters = ShapeParameters(DenseVector[Double](sample.coeff.toArray)))
   }
 
-  def getBestFittingParsFromJSON: ModelFittingParameters = {
-    val loggerSeq = loadLog().filter(_.status)
-    val bestSample = loggerSeq.sortBy(f => f.logvalue("product")).reverse.head
-    sampleToModelParameters(bestSample)
-  }
-
   def printAcceptInfo(id: String = ""): Unit = {
     println(s"${id} Total accepted (${totalSamples}): ${percentAccepted}")
     generatedBy.foreach { name =>
       println(s"${id} ${name}: ${percentAcceptedOfType(name)}")
     }
     val logLast100 = logStatus.takeRight(100)
-    println(s"${id} Last 100 samples accepted (${100}): ${logLast100.map(f => if(f.status)1.0 else .0).sum/100.0}")
+    println(s"${id} Last 100 samples accepted (${100}): ${logLast100.map(f => if (f.status) 1.0 else .0).sum / 100.0}")
     generatedBy.foreach { name =>
       println(s"${id} ${name}: ${percentAcceptedOfTypeLocal(name, logLast100)}")
     }
+  }
+
+  def percentAccepted: Double = 1.0 - percentRejected
+
+  def percentRejected: Double = BigDecimal(numOfRejected.toDouble / totalSamples.toDouble).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+
+  def totalSamples: Int = numOfRejected + numOfAccepted
+
+  def percentAcceptedOfType(id: String): Double = {
+    val filtered = logStatus.filter(f => f.name == id)
+    val accepted = filtered.filter(f => f.status)
+    accepted.length.toDouble / filtered.length.toDouble
+  }
+
+  def percentAcceptedOfTypeLocal(id: String, localLog: ListBuffer[jsonLogFormat]): Double = {
+    val filtered = localLog.filter(f => f.name == id)
+    val accepted = filtered.filter(f => f.status)
+    accepted.length.toDouble / filtered.length.toDouble
   }
 
   override def toString: String = {

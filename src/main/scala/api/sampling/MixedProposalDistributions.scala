@@ -16,71 +16,72 @@
 
 package api.sampling
 
-import api.other.{DoubleProjection, IcpProjectionDirection, ModelAndTargetSampling, ModelSampling, TargetSampling}
+import api.other._
 import api.sampling.proposals._
 import scalismo.geometry.{Landmark, _2D}
 import scalismo.mesh.{LineMesh2D, TriangleMesh3D}
 import scalismo.sampling.proposals.MixtureProposal
 import scalismo.sampling.proposals.MixtureProposal.ProposalGeneratorWithTransition
-import scalismo.statisticalmodel.StatisticalLineMeshModel
 import scalismo.sampling.proposals.MixtureProposal.implicits._
+import scalismo.statisticalmodel.StatisticalLineMeshModel
 import scalismo.utils.Random.implicits._
 
 object MixedProposalDistributions {
   TriangleMesh3D
+
   def mixedProposalRandom(
-    model: StatisticalLineMeshModel
-  ): ProposalGeneratorWithTransition[ModelFittingParameters] = {
+                           model: StatisticalLineMeshModel
+                         ): ProposalGeneratorWithTransition[ModelFittingParameters] = {
     val mixproposal = MixtureProposal(
-//      0.5 *: RandomShapeUpdateProposal(
-//        model,
-//        1.0,
-//        generatedBy = "RandomShape-1.0"
-//      ) +
-//        0.5 *: RandomShapeUpdateProposal(
-//          model,
-//          0.1,
-//          generatedBy = "RandomShape-0.1"
-//        ) +
+      //      0.5 *: RandomShapeUpdateProposal(
+      //        model,
+      //        1.0,
+      //        generatedBy = "RandomShape-1.0"
+      //      ) +
+      //        0.5 *: RandomShapeUpdateProposal(
+      //          model,
+      //          0.1,
+      //          generatedBy = "RandomShape-0.1"
+      //        ) +
       0.5 *: RandomShapeUpdateProposal(
         model,
         0.01,
         generatedBy = "RandomShape-0.01"
       )
-//        +
-//        0.5 *: RandomShapeUpdateProposal(
-//          model,
-//          0.001,
-//          generatedBy = "RandomShape-0.001"
-//        )
-//          +
-//        0.5 *: RandomShapeUpdateProposal(
-//          model,
-//          0.0001,
-//          generatedBy = "RandomShape-0.0001"
-//        ) +
-//        0.5 *: RandomShapeUpdateProposal(
-//          model,
-//          0.00001,
-//          generatedBy = "RandomShape-0.00001"
-//        )
+      //        +
+      //        0.5 *: RandomShapeUpdateProposal(
+      //          model,
+      //          0.001,
+      //          generatedBy = "RandomShape-0.001"
+      //        )
+      //          +
+      //        0.5 *: RandomShapeUpdateProposal(
+      //          model,
+      //          0.0001,
+      //          generatedBy = "RandomShape-0.0001"
+      //        ) +
+      //        0.5 *: RandomShapeUpdateProposal(
+      //          model,
+      //          0.00001,
+      //          generatedBy = "RandomShape-0.00001"
+      //        )
     )
     mixproposal
   }
 
   def mixedProposalICP(
-    model: StatisticalLineMeshModel,
-    target: LineMesh2D,
-    modelLMs: Seq[Landmark[_2D]],
-    targetLMs: Seq[Landmark[_2D]],
-    numOfSamplePoints: Int,
-    projectionDirection: IcpProjectionDirection = ModelAndTargetSampling,
-    tangentialNoise: Double = 100.0,
-    noiseAlongNormal: Double = 3.0,
-    stepLength: Double = 0.1,
-    boundaryAware: Boolean = true,
-    useLandmarkCorrespondence: Boolean = false,
-    ): ProposalGeneratorWithTransition[ModelFittingParameters] = {
+                        model: StatisticalLineMeshModel,
+                        target: LineMesh2D,
+                        modelLMs: Seq[Landmark[_2D]],
+                        targetLMs: Seq[Landmark[_2D]],
+                        numOfSamplePoints: Int,
+                        projectionDirection: IcpProjectionDirection = ModelAndTargetSampling,
+                        tangentialNoise: Double = 100.0,
+                        noiseAlongNormal: Double = 3.0,
+                        stepLength: Double = 0.1,
+                        boundaryAware: Boolean = true,
+                        useLandmarkCorrespondence: Boolean = false,
+                      ): ProposalGeneratorWithTransition[ModelFittingParameters] = {
 
     val rate = 0.5
 

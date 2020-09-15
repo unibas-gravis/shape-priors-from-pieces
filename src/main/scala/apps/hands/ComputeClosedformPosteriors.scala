@@ -47,7 +47,7 @@ object ComputeClosedformPosteriors {
     val refCut3D = LineMeshConverter.lineMesh2Dto3D(refCut2D)
 
     // establish correspondence and compute posterior model
-    val corrPoint = refCut2D.pointSet.points.toIndexedSeq.map{p => (targetFull2D.pointSet.findClosestPoint(p).id, p)}
+    val corrPoint = refCut2D.pointSet.points.toIndexedSeq.map { p => (targetFull2D.pointSet.findClosestPoint(p).id, p) }
     val posModel = modelLineMesh.posterior(corrPoint, 2.0)
 
     // visualization of target mesh
@@ -62,7 +62,7 @@ object ComputeClosedformPosteriors {
     val sampleGroup = ui.createGroup("samples")
     (1 to 20).foreach(i => {
       val sample = posModel.sample()
-      ui.show(sampleGroup,LineMeshConverter.lineMesh2Dto3D(sample),s"sample$i").opacity = 0
+      ui.show(sampleGroup, LineMeshConverter.lineMesh2Dto3D(sample), s"sample$i").opacity = 0
     })
 
     // visualize first X principal components

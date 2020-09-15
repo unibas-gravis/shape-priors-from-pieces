@@ -20,7 +20,7 @@ import api.sampling.ModelFittingParameters
 import scalismo.common.PointId
 import scalismo.geometry.{Point, _2D}
 import scalismo.sampling.DistributionEvaluator
-import scalismo.statisticalmodel.{MultivariateNormalDistribution, StatisticalLineMeshModel}
+import scalismo.statisticalmodel.StatisticalLineMeshModel
 
 case class CorrespondenceEvaluator(model: StatisticalLineMeshModel,
                                    correspondences: Seq[(PointId, Point[_2D])], uncertainty: Double)
@@ -31,16 +31,16 @@ case class CorrespondenceEvaluator(model: StatisticalLineMeshModel,
 
   override def logValue(sample: ModelFittingParameters): Double = {
 
-//    val transform = ModelFittingParameters.poseTransform(sample)
-    val currModelInstance = model.instance(sample.shapeParameters.parameters)//.transform(transform)
+    //    val transform = ModelFittingParameters.poseTransform(sample)
+    val currModelInstance = model.instance(sample.shapeParameters.parameters) //.transform(transform)
 
-    val likelihoods = correspondences.map( correspondence => {
+    val likelihoods = correspondences.map(correspondence => {
       val (id, targetPoint) = correspondence
       val modelInstancePoint = currModelInstance.pointSet.point(id)
       val observedDeformation = (targetPoint - modelInstancePoint).norm
 
       likelihoodIndependent.logPdf(observedDeformation)
-//      uncertainty.logpdf(observedDeformation.toBreezeVector)
+      //      uncertainty.logpdf(observedDeformation.toBreezeVector)
     })
 
     val loglikelihood = likelihoods.sum

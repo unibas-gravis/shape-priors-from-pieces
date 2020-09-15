@@ -16,9 +16,8 @@
 
 package api.other
 
-import api.other.RegistrationComparison.avgDistanceBoundaryAware
-import scalismo.geometry.{Point, _2D, _3D}
-import scalismo.mesh.{LineMesh, LineMesh2D, MeshMetrics, TriangleMesh, TriangleMesh3D}
+import scalismo.geometry.{Point, _2D}
+import scalismo.mesh.{LineMesh, LineMesh2D}
 import scalismo.registration.LandmarkRegistration
 
 object RegistrationComparison {
@@ -30,6 +29,12 @@ object RegistrationComparison {
     println(s"ID: ${id} average2surface: ${avgDist2Surf} hausdorff: ${hausdorffDistance}")
   }
 
+  def evaluateReconstruction2GroundTruthBoundaryAware(id: String, reconstruction: LineMesh2D, groundTruth: LineMesh2D): Unit = {
+    val (avgDist2Surf, maxDist2Surf) = avgDistanceBoundaryAware(reconstruction, groundTruth)
+
+    println(s"ID: ${id} average2surface: ${avgDist2Surf} max: ${maxDist2Surf}")
+  }
+
   private def avgDistanceBoundaryAware(m1: LineMesh[_2D], m2: LineMesh[_2D]): (Double, Double) = {
 
     val pointsOnSample = m1.pointSet.points
@@ -38,13 +43,6 @@ object RegistrationComparison {
       (pTarget - p).norm
     }
     (dists.sum / dists.size, dists.max)
-  }
-
-
-  def evaluateReconstruction2GroundTruthBoundaryAware(id: String, reconstruction: LineMesh2D, groundTruth: LineMesh2D): Unit = {
-    val (avgDist2Surf, maxDist2Surf) = avgDistanceBoundaryAware(reconstruction, groundTruth)
-
-    println(s"ID: ${id} average2surface: ${avgDist2Surf} max: ${maxDist2Surf}")
   }
 
 }
@@ -67,8 +65,8 @@ object LineMeshMetrics2D {
   }
 
   /**
-    * Returns the Hausdorff distance between the two meshes
-    */
+   * Returns the Hausdorff distance between the two meshes
+   */
   def hausdorffDistance(m1: LineMesh[_2D], m2: LineMesh[_2D]): Double = {
     def allDistsBetweenMeshes(mm1: LineMesh[_2D], mm2: LineMesh[_2D]): Iterator[Double] = {
       for (ptM1 <- mm1.pointSet.points) yield {

@@ -5,11 +5,11 @@ import java.io.File
 import apps.hands.preprocessing.CreateHandReference.{getLmPoint, getPointsAroundLM}
 import apps.scalismoExtension.LineMeshConverter
 import apps.util.myPaths
-import scalismo.common.{DiscreteDomain, DiscreteField}
+import scalismo.common.{DiscreteField, UnstructuredPointsDomain}
 import scalismo.geometry._
 import scalismo.io.{LandmarkIO, MeshIO}
 import scalismo.mesh.{LineCell, LineList, LineMesh2D}
-import scalismo.ui.api.{ScalismoUI, ScalismoUIHeadless}
+import scalismo.ui.api.ScalismoUIHeadless
 
 object CreatePartialData {
 
@@ -20,8 +20,8 @@ object CreatePartialData {
     val alignedLMFiles = new File(myPaths.datapath, "aligned/landmarks").listFiles(_.getName.endsWith(".json"))
 
     val targetNameSeq = Seq("test-0-normal", "test-1-normal", "test-11-normal") //, "test-0-smaller", "test-0-smallest", "test-0-bigger", "test-0-biggest")
-//    val targetNameSeq = Seq("test-11", "test-11-smaller", "test-11-smallest", "test-11-bigger", "test-11-biggest")
-//    val targetNameSeq = Seq("hand-0", "hand-1", "hand-2", "hand-3", "hand-5", "hand-6", "hand-7", "hand-8", "hand-10", "hand-11", "hand-12", "hand-16", "mean", "mean-bigger", "xray")
+    //    val targetNameSeq = Seq("test-11", "test-11-smaller", "test-11-smallest", "test-11-bigger", "test-11-biggest")
+    //    val targetNameSeq = Seq("hand-0", "hand-1", "hand-2", "hand-3", "hand-5", "hand-6", "hand-7", "hand-8", "hand-10", "hand-11", "hand-12", "hand-16", "mean", "mean-bigger", "xray")
     targetNameSeq.foreach { targetname =>
       //    val targetname = "hand-0"
 
@@ -64,12 +64,12 @@ object CreatePartialData {
               EuclideanVector.apply(x = n.x, y = n.y, z = 0) * 10
             }
           val normalVectorsModelFields =
-            DiscreteField[_3D, DiscreteDomain[_3D], EuclideanVector[_3D]](
-              ref3D.pointSet,
+            DiscreteField[_3D, UnstructuredPointsDomain, EuclideanVector[_3D]]( // DiscreteField[_3D, UnstructuredPointsDomain, EuclideanVector[_3D]]
+              UnstructuredPointsDomain.Create.CreateUnstructuredPointsDomain3D.create(ref3D.pointSet.points.toIndexedSeq),
               normalVectorsModel
             )
 
-//          val ui = ScalismoUI(s"${targetname}_${finger}_${percentageCut}")
+          //          val ui = ScalismoUI(s"${targetname}_${finger}_${percentageCut}")
           val ui = ScalismoUIHeadless()
           ui.show(ref3D, "cut")
           ui.show(normalVectorsModelFields, "normals")

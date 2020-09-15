@@ -20,12 +20,10 @@ import api.sampling.ModelFittingParameters
 import apps.hands.preprocessing.Create2dGPmodel.DummySampler2D
 import breeze.stats.distributions.ContinuousDistr
 import scalismo.common.PointId
-import scalismo.geometry.{Point, _2D, _3D}
-import scalismo.mesh.{LineMesh, TriangleMesh3D}
-import scalismo.numerics.RandomMeshSampler3D
+import scalismo.geometry.{Point, _2D}
+import scalismo.mesh.LineMesh
 import scalismo.sampling.DistributionEvaluator
-import scalismo.statisticalmodel.{StatisticalLineMeshModel, StatisticalMeshModel}
-import scalismo.utils.Random.implicits._
+import scalismo.statisticalmodel.StatisticalLineMeshModel
 
 case class IndependentPointDistanceEvaluator(model: StatisticalLineMeshModel,
                                              targetMesh: LineMesh[_2D],
@@ -33,6 +31,10 @@ case class IndependentPointDistanceEvaluator(model: StatisticalLineMeshModel,
                                              evaluationMode: EvaluationMode,
                                              numberOfPointsForComparison: Int)
   extends DistributionEvaluator[ModelFittingParameters] with EvaluationCaching {
+
+  // Make sure not to oversample if the numberOfPointsForComparison is set higher than the points in the target or the model
+  private val randomPointsOnTarget: IndexedSeq[Point[_2D]] = getRandomPointsOnTarget
+  private val randomPointIdsOnModel: IndexedSeq[PointId] = getRandomPointIdsOnModel
 
   def getRandomPointsOnTarget: IndexedSeq[Point[_2D]] = {
     if (numberOfPointsForComparison >= targetMesh.pointSet.numberOfPoints) {
@@ -53,27 +55,6 @@ case class IndependentPointDistanceEvaluator(model: StatisticalLineMeshModel,
     }
   }
 
-  // Make sure not to oversample if the numberOfPointsForComparison is set higher than the points in the target or the model
-  private val randomPointsOnTarget: IndexedSeq[Point[_2D]] = getRandomPointsOnTarget
-  private val randomPointIdsOnModel: IndexedSeq[PointId] = getRandomPointIdsOnModel
-
-  def distModelToTarget(modelSample: LineMesh[_2D]): Double = {
-    val pointsOnSample = randomPointIdsOnModel.map(modelSample.pointSet.point)
-    val dists = for (pt <- pointsOnSample) yield {
-      likelihoodModel.logPdf((targetMesh.pointSet.findClosestPoint(pt).point - pt).norm)
-    }
-    dists.sum
-  }
-
-
-  def distTargetToModel(modelSample: LineMesh[_2D]): Double = {
-    val dists = for (pt <- randomPointsOnTarget) yield {
-      likelihoodModel.logPdf((modelSample.pointSet.findClosestPoint(pt).point - pt).norm)
-    }
-    dists.sum
-  }
-
-
   def computeLogValue(sample: ModelFittingParameters): Double = {
 
     val currentSample = model.instance(sample.shapeParameters.parameters) //ModelFittingParameters.transformedMesh(model, sample)
@@ -83,6 +64,21 @@ case class IndependentPointDistanceEvaluator(model: StatisticalLineMeshModel,
       case SymmetricEvaluation => 0.5 * distModelToTarget(currentSample) + 0.5 * distTargetToModel(currentSample)
     }
     dist
+  }
+
+  def distModelToTarget(modelSample: LineMesh[_2D]): Double = {
+    val pointsOnSample = randomPointIdsOnModel.map(modelSample.pointSet.point)
+    val dists = for (pt <- pointsOnSample) yield {
+      likelihoodModel.logPdf((targetMesh.pointSet.findClosestPoint(pt).point - pt).norm)
+    }
+    dists.sum
+  }
+
+  def distTargetToModel(modelSample: LineMesh[_2D]): Double = {
+    val dists = for (pt <- randomPointsOnTarget) yield {
+      likelihoodModel.logPdf((modelSample.pointSet.findClosestPoint(pt).point - pt).norm)
+    }
+    dists.sum
   }
 }
 

@@ -2,45 +2,40 @@ package apps.hands.preprocessing
 
 import java.io.File
 
-import apps.scalismoExtension.{LineMeshConverter, LineMeshOperator}
+import apps.scalismoExtension.LineMeshConverter
 import apps.util.myPaths
-import breeze.linalg.DenseMatrix
+import scalismo.common.PointId
 import scalismo.common.UnstructuredPointsDomain.Create.CreateUnstructuredPointsDomain3D
-import scalismo.common.{Domain, PointId, PointWithId, RealSpace, VectorField}
 import scalismo.geometry._
 import scalismo.io.{LandmarkIO, MeshIO}
-import scalismo.kernels.{GaussianKernel, MatrixValuedPDKernel}
-import scalismo.mesh.{LineCell, LineList, LineMesh, LineMesh2D, TriangleMesh3D}
-import scalismo.numerics.Sampler
-import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess}
+import scalismo.mesh.{LineCell, LineList, LineMesh2D}
 import scalismo.ui.api.ScalismoUI
-import scalismo.utils.Random
 
 object CreateHandReference {
 
   def walk(mesh: LineMesh2D, stopIds: IndexedSeq[PointId], currentIds: IndexedSeq[PointId]): IndexedSeq[PointId] = {
-    val nearby = currentIds.flatMap{
+    val nearby = currentIds.flatMap {
       id =>
         mesh.topology.adjacentPointsForPoint(id)
     }
     val all = nearby.toSet.union(currentIds.toSet).toIndexedSeq
 
-    if(all.contains(stopIds.head) && all.contains(stopIds.last)) all
+    if (all.contains(stopIds.head) && all.contains(stopIds.last)) all
     else walk(mesh, stopIds, all.diff(stopIds))
   }
 
   def walkPoints(mesh: LineMesh2D, currentIds: IndexedSeq[PointId], numOfPoints: Int): IndexedSeq[PointId] = {
-    val nearby = currentIds.flatMap{
+    val nearby = currentIds.flatMap {
       id =>
         mesh.topology.adjacentPointsForPoint(id)
     }
     val all = nearby.toSet.union(currentIds.toSet).toIndexedSeq
 
-    if(all.length >= numOfPoints) all
-    else walkPoints(mesh, all,numOfPoints)
+    if (all.length >= numOfPoints) all
+    else walkPoints(mesh, all, numOfPoints)
   }
 
-  def getIDsBetweenLMs(mesh: LineMesh2D, middlePoint: Point2D, endPoints: Seq[Point2D]): IndexedSeq[PointId] ={
+  def getIDsBetweenLMs(mesh: LineMesh2D, middlePoint: Point2D, endPoints: Seq[Point2D]): IndexedSeq[PointId] = {
     require(endPoints.length == 2)
     val endIds: IndexedSeq[PointId] = endPoints.map(p => mesh.pointSet.findClosestPoint(p).id).toIndexedSeq
     val mid: PointId = mesh.pointSet.findClosestPoint(middlePoint).id
@@ -56,7 +51,7 @@ object CreateHandReference {
     walkPoints(mesh, points, numOfPoints).map(id => mesh.pointSet.point(id))
   }
 
-    def getLmPoint[A](lmSeq: Seq[Landmark[A]], name: String): Point[A] = {
+  def getLmPoint[A](lmSeq: Seq[Landmark[A]], name: String): Point[A] = {
     lmSeq.find(_.id == name).get.point
   }
 

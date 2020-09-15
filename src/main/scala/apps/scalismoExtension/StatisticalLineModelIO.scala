@@ -20,7 +20,7 @@ import java.util.Calendar
 
 import breeze.linalg.{DenseMatrix, DenseVector}
 import ncsa.hdf.`object`._
-import scalismo.common.{PointId, UnstructuredPointsDomain}
+import scalismo.common.{PointId, UnstructuredPoints}
 import scalismo.geometry.{Point, _2D}
 import scalismo.io.StatismoIO.StatismoModelType
 import scalismo.io.StatismoIO.StatismoModelType.StatismoModelType
@@ -31,27 +31,27 @@ import scala.util.{Failure, Success, Try}
 
 object StatisticalLineModelIO {
   /**
-    * Reads a statistical mesh model. The file type is determined
-    * based on the extension. Currently on the Scalismo format (.h5)
-    * is supported.
-    *
-    * @param file The statismo file
-    * @return A StatisticalLineMeshModel or the Failure
-    */
+   * Reads a statistical mesh model. The file type is determined
+   * based on the extension. Currently on the Scalismo format (.h5)
+   * is supported.
+   *
+   * @param file The statismo file
+   * @return A StatisticalLineMeshModel or the Failure
+   */
   def readStatisticalLineMeshModel(file: File): Try[StatisticalLineMeshModel] = {
     // currently, we support only the statismo format
     StatismoLineIO.readStatismoLineMeshModel(file, "/")
   }
 
   /**
-    * Writes a statistical mesh model. The file type is determined
-    * based on the extension. Currently on the Scalismo format (.h5)
-    * is supported.
-    *
-    * @param model The statistical model
-    * @param file The file to which the model is written
-    * @return In case of Failure, the Failure is returned.
-    */
+   * Writes a statistical mesh model. The file type is determined
+   * based on the extension. Currently on the Scalismo format (.h5)
+   * is supported.
+   *
+   * @param model The statistical model
+   * @param file  The file to which the model is written
+   * @return In case of Failure, the Failure is returned.
+   */
   def writeStatisticalLineMeshModel(model: StatisticalLineMeshModel, file: File): Try[Unit] = {
     // currently, we support only the statismo format
     StatismoLineIO.writeStatismoLineMeshModel(model, file, "/")
@@ -60,26 +60,11 @@ object StatisticalLineModelIO {
 
 object StatismoLineIO {
 
-  object StatismoLineModelType extends Enumeration {
-    type StatismoLineModelType = Value
-    val Line_Mesh, Unknown = Value
-
-    def fromString(s: String): Value = {
-      s match {
-        case "Line_MESH_MODEL" => Line_Mesh
-        case _ => Unknown
-      }
-    }
-  }
-
   type ModelCatalog = Seq[CatalogEntry]
 
-  case class CatalogEntry(name: String, modelType: StatismoModelType, modelPath: String)
-  object NoCatalogPresentException extends Exception
-
   /**
-    * List all models that are stored in the given hdf5 file.
-    */
+   * List all models that are stored in the given hdf5 file.
+   */
   def readModelCatalog(file: File): Try[ModelCatalog] = {
     import scala.collection.JavaConverters._
     def flatten[A](xs: Seq[Try[A]]): Try[Seq[A]] = Try(xs.map(_.get))
@@ -108,11 +93,12 @@ object StatismoLineIO {
   }
 
   /**
-    * Reads a statistical mesh model from a statismo file
-    * @param file The statismo file
-    * @param modelPath a path in the hdf5 file where the model is stored
-    * @return
-    */
+   * Reads a statistical mesh model from a statismo file
+   *
+   * @param file      The statismo file
+   * @param modelPath a path in the hdf5 file where the model is stored
+   * @return
+   */
   def readStatismoLineMeshModel(file: File, modelPath: String = "/"): Try[StatisticalLineMeshModel] = {
 
     def extractOrthonormalPCABasisMatrix(pcaBasisMatrix: DenseMatrix[Double], pcaVarianceVector: DenseVector[Double]): DenseMatrix[Double] = {
@@ -177,6 +163,7 @@ object StatismoLineIO {
     } yield {
       // statismo stores the mean as the point position, not as a displacement on the reference.
       def flatten(v: IndexedSeq[Point[_2D]]) = DenseVector(v.flatten(pt => Array(pt(0), pt(1))).toArray)
+
       val refpointsVec = flatten(mesh.pointSet.points.toIndexedSeq)
       val meanDefVector = meanVector - refpointsVec
 
@@ -186,12 +173,62 @@ object StatismoLineIO {
     modelOrFailure
   }
 
-  object StatismoVersion extends Enumeration {
-    type StatismoVersion = Value
-    val v081, v090 = Value
+  private def ndFloatArrayToDoubleMatrix(array: NDArray[Float])(implicit dummy: DummyImplicit, dummy2: DummyImplicit): DenseMatrix[Double] = {
+    // the data in ndarray is stored row-major, but DenseMatrix stores it column major. We therefore
+    // do switch dimensions and transpose
+    DenseMatrix.create(array.dims(1).toInt, array.dims(0).toInt, array.data.map(_.toDouble)).t
+  }
+
+  private def readStandardMeshFromRepresenterGroup(h5file: HDF5File, modelPath: String): Try[LineMesh[_2D]] = {
+    for {
+      vertArray <- h5file.readNDArray[Float](s"$modelPath/representer/points").flatMap(vertArray =>
+        if (vertArray.dims(0) != 2)
+          Failure(new Exception("the representer points are not 2D points"))
+        else
+          Success(vertArray))
+      vertMat = ndFloatArrayToDoubleMatrix(vertArray)
+      points = for (i <- 0 until vertMat.cols) yield Point(vertMat(0, i), vertMat(1, i))
+      cellArray <- h5file.readNDArray[Int](s"$modelPath/representer/cells").flatMap(cellArray =>
+        if (cellArray.dims(0) != 2)
+          Failure(new Exception("the representer cells are not triangles"))
+        else
+          Success(cellArray))
+      cellMat = ndIntArrayToIntMatrix(cellArray)
+      cells = for (i <- 0 until cellMat.cols) yield LineCell(PointId(cellMat(0, i)), PointId(cellMat(1, i)))
+      cellArray <- h5file.readNDArray[Int](s"$modelPath/representer/cells")
+    } yield LineMesh2D(UnstructuredPoints(points), LineList(cells))
+  }
+
+  private def ndIntArrayToIntMatrix(array: NDArray[Int]) = {
+    // the data in ndarray is stored row-major, but DenseMatrix stores it column major. We therefore
+    // do switch dimensions and transpose
+
+    DenseMatrix.create(array.dims(1).toInt, array.dims(0).toInt, array.data).t
+  }
+
+  /*
+   * reads the reference (a vtk file), which is stored as a byte array in the hdf5 file)
+   */
+  private def readVTKMeshFromRepresenterGroup(h5file: HDF5File, modelPath: String): Try[LineMesh[_2D]] = {
+    for {
+      rawdata <- h5file.readNDArray[Byte](s"$modelPath/representer/reference")
+      vtkFile <- writeTmpFile(rawdata.data)
+      lineMesh <- MeshIO.readLineMesh2D(vtkFile)
+    } yield lineMesh
   }
 
   import StatismoVersion._
+
+  private def writeTmpFile(data: Array[Byte]): Try[File] = {
+    val tmpfile = File.createTempFile("temp", ".vtk")
+    tmpfile.deleteOnExit()
+
+    Try {
+      val stream = new DataOutputStream(new FileOutputStream(tmpfile))
+      stream.write(data)
+      stream.close()
+    } map (_ => tmpfile)
+  }
 
   def writeStatismoLineMeshModel(model: StatisticalLineMeshModel, file: File, modelPath: String = "/", statismoVersion: StatismoVersion = v090): Try[Unit] = {
 
@@ -285,59 +322,25 @@ object StatismoLineIO {
     } yield Success(())
   }
 
-  private def ndFloatArrayToDoubleMatrix(array: NDArray[Float])(implicit dummy: DummyImplicit, dummy2: DummyImplicit): DenseMatrix[Double] = {
-    // the data in ndarray is stored row-major, but DenseMatrix stores it column major. We therefore
-    // do switch dimensions and transpose
-    DenseMatrix.create(array.dims(1).toInt, array.dims(0).toInt, array.data.map(_.toDouble)).t
+  case class CatalogEntry(name: String, modelType: StatismoModelType, modelPath: String)
+
+  object StatismoLineModelType extends Enumeration {
+    type StatismoLineModelType = Value
+    val Line_Mesh, Unknown = Value
+
+    def fromString(s: String): Value = {
+      s match {
+        case "Line_MESH_MODEL" => Line_Mesh
+        case _ => Unknown
+      }
+    }
   }
 
-  private def ndIntArrayToIntMatrix(array: NDArray[Int]) = {
-    // the data in ndarray is stored row-major, but DenseMatrix stores it column major. We therefore
-    // do switch dimensions and transpose
+  object NoCatalogPresentException extends Exception
 
-    DenseMatrix.create(array.dims(1).toInt, array.dims(0).toInt, array.data).t
-  }
-
-  private def readStandardMeshFromRepresenterGroup(h5file: HDF5File, modelPath: String): Try[LineMesh[_2D]] = {
-    for {
-      vertArray <- h5file.readNDArray[Float](s"$modelPath/representer/points").flatMap(vertArray =>
-        if (vertArray.dims(0) != 2)
-          Failure(new Exception("the representer points are not 2D points"))
-        else
-          Success(vertArray))
-      vertMat = ndFloatArrayToDoubleMatrix(vertArray)
-      points = for (i <- 0 until vertMat.cols) yield Point(vertMat(0, i), vertMat(1, i))
-      cellArray <- h5file.readNDArray[Int](s"$modelPath/representer/cells").flatMap(cellArray =>
-        if (cellArray.dims(0) != 2)
-          Failure(new Exception("the representer cells are not triangles"))
-        else
-          Success(cellArray))
-      cellMat = ndIntArrayToIntMatrix(cellArray)
-      cells = for (i <- 0 until cellMat.cols) yield LineCell(PointId(cellMat(0, i)), PointId(cellMat(1, i)))
-      cellArray <- h5file.readNDArray[Int](s"$modelPath/representer/cells")
-    } yield LineMesh2D(UnstructuredPointsDomain(points), LineList(cells))
-  }
-
-  /*
-   * reads the reference (a vtk file), which is stored as a byte array in the hdf5 file)
-   */
-  private def readVTKMeshFromRepresenterGroup(h5file: HDF5File, modelPath: String): Try[LineMesh[_2D]] = {
-    for {
-      rawdata <- h5file.readNDArray[Byte](s"$modelPath/representer/reference")
-      vtkFile <- writeTmpFile(rawdata.data)
-      lineMesh <- MeshIO.readLineMesh2D(vtkFile)
-    } yield lineMesh
-  }
-
-  private def writeTmpFile(data: Array[Byte]): Try[File] = {
-    val tmpfile = File.createTempFile("temp", ".vtk")
-    tmpfile.deleteOnExit()
-
-    Try {
-      val stream = new DataOutputStream(new FileOutputStream(tmpfile))
-      stream.write(data)
-      stream.close()
-    } map (_ => tmpfile)
+  object StatismoVersion extends Enumeration {
+    type StatismoVersion = Value
+    val v081, v090 = Value
   }
 
 }

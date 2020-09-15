@@ -3,7 +3,7 @@ package apps.scalismoExtension
 import java.io.File
 
 import breeze.linalg.DenseMatrix
-import scalismo.common.{Domain, RealSpace, UnstructuredPointsDomain, VectorField}
+import scalismo.common.{Domain, EuclideanSpace, Field, UnstructuredPoints3D}
 import scalismo.geometry.{EuclideanVector, Point, Point3D, _3D}
 import scalismo.io.StatisticalModelIO
 import scalismo.kernels.{DiagonalKernel, GaussianKernel, MatrixValuedPDKernel}
@@ -18,7 +18,7 @@ object ModelSaveLoadTest extends App {
   println("starting app...")
   scalismo.initialize()
 
-  val zeroMean = VectorField(RealSpace[_3D], (_: Point[_3D]) => EuclideanVector.zeros[_3D])
+  val zeroMean: AnyRef with Field[_3D, EuclideanVector[_3D]] = Field(EuclideanSpace[_3D], (_: Point[_3D]) => EuclideanVector.zeros[_3D])
 
   val cov: MatrixValuedPDKernel[_3D] = new MatrixValuedPDKernel[_3D]() {
     private val kernel = DiagonalKernel(GaussianKernel[_3D](1), 3)
@@ -29,12 +29,12 @@ object ModelSaveLoadTest extends App {
 
     override def outputDim = 3
 
-    override def domain: Domain[_3D] = RealSpace[_3D]
+    override def domain: Domain[_3D] = EuclideanSpace[_3D]
   }
 
   val gp = GaussianProcess[_3D, EuclideanVector[_3D]](zeroMean, cov)
 
-  val pointDomain = UnstructuredPointsDomain[_3D](IndexedSeq(Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(0, 1, 0)))
+  val pointDomain = UnstructuredPoints3D(IndexedSeq(Point3D(0, 0, 0), Point3D(1, 0, 0), Point3D(0, 1, 0)))
   val mesh = TriangleMesh3D(pointDomain, TriangleList(IndexedSeq()))
 
   val sampler = RandomMeshSampler3D(mesh, 10, 1024)

@@ -18,17 +18,17 @@ package api.sampling
 
 import breeze.linalg.DenseVector
 import scalismo.geometry._
-import scalismo.statisticalmodel.{MultivariateNormalDistribution}
+import scalismo.statisticalmodel.MultivariateNormalDistribution
 
 object SurfaceNoiseHelpers {
 
   /**
-    * Calculates the multivariate normal distribution for surface normal dependant noise.
-    *
-    * @param surfaceNormal                 Normal of the surface at the given position.
-    * @param stdDevNoiseAlongSurfaceNormal Standard deviation of the noise along the normal.
-    * @param stdDevNoiseInTangentialPlane  Standard deviation of the noise in the tangent plane.
-    */
+   * Calculates the multivariate normal distribution for surface normal dependant noise.
+   *
+   * @param surfaceNormal                 Normal of the surface at the given position.
+   * @param stdDevNoiseAlongSurfaceNormal Standard deviation of the noise along the normal.
+   * @param stdDevNoiseInTangentialPlane  Standard deviation of the noise in the tangent plane.
+   */
   def surfaceNormalDependantNoise(
                                    surfaceNormal: EuclideanVector3D,
                                    stdDevNoiseAlongSurfaceNormal: Double,
@@ -60,10 +60,10 @@ object SurfaceNoiseHelpers {
   }
 
   def surfaceNormalDependantNoise2D(
-                                   surfaceNormal: EuclideanVector2D,
-                                   stdDevNoiseAlongSurfaceNormal: Double,
-                                   stdDevNoiseInTangentialPlane: Double
-                                 ): MultivariateNormalDistribution = {
+                                     surfaceNormal: EuclideanVector2D,
+                                     stdDevNoiseAlongSurfaceNormal: Double,
+                                     stdDevNoiseInTangentialPlane: Double
+                                   ): MultivariateNormalDistribution = {
 
     val normalDirection = surfaceNormal.normalize
 

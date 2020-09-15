@@ -3,59 +3,24 @@ package apps.hands
 import java.awt.Color
 import java.io.File
 
-import api.other.{DoubleProjection, RegistrationComparison, TargetSampling}
-import api.sampling.evaluators.{SymmetricEvaluation, TargetToModelEvaluation}
+import api.other.{RegistrationComparison, TargetSampling}
+import api.sampling.evaluators.TargetToModelEvaluation
 import api.sampling.{MixedProposalDistributions, ModelFittingParameters, ProductEvaluators, SamplingRegistration}
-import apps.scalismoExtension.LineModelSaveLoadTest.model
 import apps.hands.preprocessing.{Create2dGPmodel, PartialDataFromLMs}
 import apps.scalismoExtension.{LineMeshConverter, LineMeshOperator}
 import apps.util.myPaths
-import scalismo.common.{DiscreteDomain, DiscreteField, PointId, UnstructuredPointsDomain}
+import scalismo.common.{DiscreteField, UnstructuredPointsDomain}
 import scalismo.geometry._
-import scalismo.io.{MeshIO, StatisticalLineModelIO, StatisticalModelIO}
+import scalismo.io.{MeshIO, StatisticalLineModelIO}
 import scalismo.mesh._
 import scalismo.sampling.DistributionEvaluator
 import scalismo.sampling.proposals.MixtureProposal
-import scalismo.sampling.proposals.MixtureProposal.{ProposalGeneratorWithTransition, SymmetricProposalGeneratorWithTransition}
-import scalismo.statisticalmodel.{StatisticalLineMeshModel, StatisticalMeshModel}
-import scalismo.ui.api.{ScalismoUI, ScalismoUIHeadless, StatisticalMeshModelViewControls}
+import scalismo.sampling.proposals.MixtureProposal.ProposalGeneratorWithTransition
+import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.ui.api.ScalismoUI
 import scalismo.utils.Random.implicits._
 
 object Registration2D {
-
-  def fitting(
-    model: StatisticalLineMeshModel,
-    targetMesh: LineMesh2D,
-    evaluator: Map[String, DistributionEvaluator[ModelFittingParameters]],
-    proposal: ProposalGeneratorWithTransition[ModelFittingParameters],
-    numOfIterations: Int,
-    showModel: Option[ScalismoUI],
-    log: File,
-    initialParameters: Option[ModelFittingParameters] = None
-  ): LineMesh[_2D] = {
-
-    val samplingRegistration = new SamplingRegistration(
-      model,
-      targetMesh,
-      showModel,
-      modelUiUpdateInterval = 100,
-      acceptInfoPrintInterval = 500
-    )
-    val t0 = System.currentTimeMillis()
-
-    val best = samplingRegistration.runfitting(
-      evaluator,
-      proposal,
-      numOfIterations,
-      initialModelParameters = initialParameters,
-      jsonName = log
-    )
-
-    val t1 = System.currentTimeMillis()
-    println(s"ICP-Timing: ${(t1 - t0) / 1000.0} sec")
-    //    ModelFittingParameters.transformedMesh(model, best)
-    model.instance(best.shapeParameters.parameters)
-  }
 
   def main(args: Array[String]) {
     println("starting app...")
@@ -90,12 +55,12 @@ object Registration2D {
     println("---------- ---------- ---------- ---------- ----------")
 
     //    val dataPath = new File("data/partial/mesh")
-//    val dataPath = new File(myPaths.datapath, "registered/mesh")
-//    val dataFiles = dataPath
-//      .listFiles(
-//        f => f.getName.endsWith(".vtk") && f.getName.startsWith("hand")
-//      )
-//      .sorted
+    //    val dataPath = new File(myPaths.datapath, "registered/mesh")
+    //    val dataFiles = dataPath
+    //      .listFiles(
+    //        f => f.getName.endsWith(".vtk") && f.getName.startsWith("hand")
+    //      )
+    //      .sorted
 
     (0 until 1).foreach { index =>
       //    (0 to 3).foreach { i =>
@@ -103,16 +68,16 @@ object Registration2D {
       //    (8 to 12).foreach { i =>
       println(s"Index ${index}")
 
-//      val targetFile = dataFiles(index)
-//      val targetLinemesh2DInit = MeshIO.readLineMesh2D(targetFile).get
-//      val targetLinemesh2D = targetLinemesh2DInit
-//      val targetLineMesh3D = LineMeshConverter.lineMesh2Dto3D(targetLinemesh2D)
+      //      val targetFile = dataFiles(index)
+      //      val targetLinemesh2DInit = MeshIO.readLineMesh2D(targetFile).get
+      //      val targetLinemesh2D = targetLinemesh2DInit
+      //      val targetLineMesh3D = LineMeshConverter.lineMesh2Dto3D(targetLinemesh2D)
       val (
         targetFile,
         targetLinemesh2DInit,
         targetLinemesh2D,
         targetLineMesh3D
-      ) = PartialDataFromLMs.getPartialData(index, index)
+        ) = PartialDataFromLMs.getPartialData(index, index)
 
       val m2Dboundary = targetLinemesh2D.pointSet.pointIds.toIndexedSeq.filter(
         id => targetLinemesh2D.topology.adjacentPointsForPoint(id).length < 2
@@ -131,13 +96,13 @@ object Registration2D {
           val nInit = targetLinemesh2D.vertexNormals(id)
           val n =
             if (LineMeshOperator(targetLinemesh2D)
-                  .verifyNormalDirection(p, nInit)) nInit
+              .verifyNormalDirection(p, nInit)) nInit
             else nInit.*(-1.0)
           EuclideanVector.apply(x = n.x, y = n.y, z = 0) * 10
         }
       val normalVectorsFields =
-        DiscreteField[_3D, DiscreteDomain[_3D], EuclideanVector[_3D]](
-          targetLineMesh3D.pointSet,
+        DiscreteField[_3D, UnstructuredPointsDomain, EuclideanVector[_3D]](
+          UnstructuredPointsDomain.Create.CreateUnstructuredPointsDomain3D.create(targetLineMesh3D.pointSet.points.toIndexedSeq),
           normalVectors
         )
 
@@ -147,8 +112,8 @@ object Registration2D {
           EuclideanVector.apply(x = n.x, y = n.y, z = 0) * 10
         }
       val normalVectorsModelFields =
-        DiscreteField[_3D, DiscreteDomain[_3D], EuclideanVector[_3D]](
-          referenceLineMesh3D.pointSet,
+        DiscreteField[_3D, UnstructuredPointsDomain, EuclideanVector[_3D]](
+          UnstructuredPointsDomain.Create.CreateUnstructuredPointsDomain3D.create(referenceLineMesh3D.pointSet.points.toIndexedSeq),
           normalVectorsModel
         )
 
@@ -198,14 +163,14 @@ object Registration2D {
       val proposal: ProposalGeneratorWithTransition[ModelFittingParameters] =
         MixtureProposal(Seq((0.1, proposalICP), (0.9, proposalRND)))
 
-//      val evaluator        model, =
-//        ProductEvaluators.proximityAndCollectiveHausdorffBoundaryAware(
-//          modelLineMesh,
-//          targetLinemesh2D,
-//          TargetToModelEvaluation,
-//          uncertaintyAvg = 1.0,
-//          numberOfEvaluationPoints = numOfEvaluatorPoints
-//        )
+      //      val evaluator        model, =
+      //        ProductEvaluators.proximityAndCollectiveHausdorffBoundaryAware(
+      //          modelLineMesh,
+      //          targetLinemesh2D,
+      //          TargetToModelEvaluation,
+      //          uncertaintyAvg = 1.0,
+      //          numberOfEvaluationPoints = numOfEvaluatorPoints
+      //        )
       val evaluator = ProductEvaluators.proximityAndIndependent(
         modelLineMesh,
         targetLinemesh2D,
@@ -235,11 +200,45 @@ object Registration2D {
         bestRegistration,
         targetLinemesh2D
       )
-//      MeshIO.writeLineMesh[_2D](
-//        bestRegistration,
-//        new File(myPaths.datapath, s"registered/mesh/${targetFile.getName}")
-//      )
+      //      MeshIO.writeLineMesh[_2D](
+      //        bestRegistration,
+      //        new File(myPaths.datapath, s"registered/mesh/${targetFile.getName}")
+      //      )
 
     }
+  }
+
+  def fitting(
+               model: StatisticalLineMeshModel,
+               targetMesh: LineMesh2D,
+               evaluator: Map[String, DistributionEvaluator[ModelFittingParameters]],
+               proposal: ProposalGeneratorWithTransition[ModelFittingParameters],
+               numOfIterations: Int,
+               showModel: Option[ScalismoUI],
+               log: File,
+               initialParameters: Option[ModelFittingParameters] = None
+             ): LineMesh[_2D] = {
+
+    val samplingRegistration = new SamplingRegistration(
+      model,
+      targetMesh,
+      showModel,
+      modelUiUpdateInterval = 100,
+      acceptInfoPrintInterval = 500
+    )
+    val t0 = System.currentTimeMillis()
+
+    val best = samplingRegistration.runfitting(
+      evaluator,
+      proposal,
+      numOfIterations,
+      initialModelParameters = initialParameters,
+      jsonName = log
+    )
+
+    val t1 = System.currentTimeMillis()
+    println(s"ICP-Timing: ${(t1 - t0) / 1000.0} sec")
+    //    ModelFittingParameters.transformedMesh(model, best)
+    model.instance(best.shapeParameters.parameters)
   }
 }

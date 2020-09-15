@@ -20,11 +20,10 @@ import api.sampling.ModelFittingParameters
 import apps.hands.preprocessing.Create2dGPmodel.DummySampler2D
 import breeze.stats.distributions.ContinuousDistr
 import scalismo.common.PointId
-import scalismo.geometry.{Point, _2D, _3D}
-import scalismo.mesh.{LineMesh, TriangleMesh}
-import scalismo.numerics.RandomMeshSampler3D
+import scalismo.geometry.{Point, _2D}
+import scalismo.mesh.LineMesh
 import scalismo.sampling.DistributionEvaluator
-import scalismo.statisticalmodel.{StatisticalLineMeshModel, StatisticalMeshModel}
+import scalismo.statisticalmodel.StatisticalLineMeshModel
 import scalismo.utils.Random
 
 case class CollectiveAverageHausdorffDistanceBoundaryAwareEvaluator(model: StatisticalLineMeshModel,
@@ -34,6 +33,9 @@ case class CollectiveAverageHausdorffDistanceBoundaryAwareEvaluator(model: Stati
                                                                     evaluationMode: EvaluationMode,
                                                                     numberOfPointsForComparison: Int)(implicit random: Random)
   extends DistributionEvaluator[ModelFittingParameters] with EvaluationCaching {
+
+  private val randomPointIdsOnModel = getRandomPointIdsOnModel
+  private val randomPointsOnTarget = getRandomPointsOnTarget
 
   def getRandomPointIdsOnModel: IndexedSeq[PointId] = {
     if (numberOfPointsForComparison >= model.referenceMesh.pointSet.numberOfPoints) {
@@ -68,38 +70,8 @@ case class CollectiveAverageHausdorffDistanceBoundaryAwareEvaluator(model: Stati
     Math.max(d1.max, d2.max)
   }
 
-  private val randomPointIdsOnModel = getRandomPointIdsOnModel
-  private val randomPointsOnTarget = getRandomPointsOnTarget
-
-  def avgDistModelToTarget(modelSample: LineMesh[_2D], targetMesh: LineMesh[_2D]): (Double, Double) = {
-
-    val pointsOnSample = randomPointIdsOnModel.map(modelSample.pointSet.point)
-    val dists = for (p <- pointsOnSample) yield {
-      val pTarget = targetMesh.pointSet.findClosestPoint(p).point
-//      val pTargetId = targetMesh.pointSet.findClosestPoint(pTarget).id
-//      if (targetMesh.operations.pointIsOnBoundary(pTargetId)) -1.0
-//      else
-      (pTarget - p).norm
-    }
-    val filteredDists = dists.toIndexedSeq.filter(f => f > -1.0)
-    (filteredDists.sum / filteredDists.size, filteredDists.max)
-  }
-
-  def avgDistTargetToModel(modelSample: LineMesh[_2D], targetMesh: LineMesh[_2D]): (Double, Double) = {
-
-    val dists = for (p <- randomPointsOnTarget) yield {
-      val pSample = modelSample.pointSet.findClosestPoint(p).point
-//      val pTargetId = modelSample.pointSet.findClosestPoint(pSample).id
-//      if (targetMesh.operations.pointIsOnBoundary(pTargetId)) -1.0
-//      else
-      (pSample - p).norm
-    }
-    val filteredDists = dists.toIndexedSeq.filter(f => f > -1.0)
-    (filteredDists.sum / filteredDists.size, filteredDists.max)
-  }
-
   def computeLogValue(sample: ModelFittingParameters): Double = {
-    val currentSample = model.instance(sample.shapeParameters.parameters)//ModelFittingParameters.transformedMesh(model, sample)
+    val currentSample = model.instance(sample.shapeParameters.parameters) //ModelFittingParameters.transformedMesh(model, sample)
     val dist = evaluationMode match {
       case ModelToTargetEvaluation => avgDistModelToTarget(currentSample, targetMesh)
       case TargetToModelEvaluation => avgDistTargetToModel(currentSample, targetMesh)
@@ -110,5 +82,32 @@ case class CollectiveAverageHausdorffDistanceBoundaryAwareEvaluator(model: Stati
       }
     }
     likelihoodModelAvg.logPdf(dist._1) + likelihoodModelMax.logPdf(dist._2)
+  }
+
+  def avgDistModelToTarget(modelSample: LineMesh[_2D], targetMesh: LineMesh[_2D]): (Double, Double) = {
+
+    val pointsOnSample = randomPointIdsOnModel.map(modelSample.pointSet.point)
+    val dists = for (p <- pointsOnSample) yield {
+      val pTarget = targetMesh.pointSet.findClosestPoint(p).point
+      //      val pTargetId = targetMesh.pointSet.findClosestPoint(pTarget).id
+      //      if (targetMesh.operations.pointIsOnBoundary(pTargetId)) -1.0
+      //      else
+      (pTarget - p).norm
+    }
+    val filteredDists = dists.toIndexedSeq.filter(f => f > -1.0)
+    (filteredDists.sum / filteredDists.size, filteredDists.max)
+  }
+
+  def avgDistTargetToModel(modelSample: LineMesh[_2D], targetMesh: LineMesh[_2D]): (Double, Double) = {
+
+    val dists = for (p <- randomPointsOnTarget) yield {
+      val pSample = modelSample.pointSet.findClosestPoint(p).point
+      //      val pTargetId = modelSample.pointSet.findClosestPoint(pSample).id
+      //      if (targetMesh.operations.pointIsOnBoundary(pTargetId)) -1.0
+      //      else
+      (pSample - p).norm
+    }
+    val filteredDists = dists.toIndexedSeq.filter(f => f > -1.0)
+    (filteredDists.sum / filteredDists.size, filteredDists.max)
   }
 }

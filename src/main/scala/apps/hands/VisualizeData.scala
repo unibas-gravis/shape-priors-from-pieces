@@ -6,9 +6,7 @@ import java.io.File
 import apps.scalismoExtension.LineMeshConverter
 import apps.util.myPaths
 import breeze.linalg.DenseVector
-import scalismo.geometry.{Point2D, _2D}
 import scalismo.io.MeshIO
-import scalismo.registration.{LandmarkRegistration, RigidTransformation, ScalingTransformation, TranslationTransform}
 import scalismo.statisticalmodel.StatisticalLineMeshModel
 import scalismo.ui.api.{Group, ScalismoUI}
 
@@ -26,12 +24,12 @@ object VisualizeData {
         )
         showing.opacity = 0f
         showing.lineWidth = 1
-        if(i == 0){
+        if (i == 0) {
           showing.color = Color.GREEN
         }
-//        else{
-//          showing.color = Color.BLACK
-//        }
+        //        else{
+        //          showing.color = Color.BLACK
+        //        }
       }
     }
   }

@@ -20,9 +20,9 @@ import java.io.File
 
 object myPaths {
   val datapath: File = new File("/export/skulls/projects/lousy-hands/data/hands")
-//  val experimentPath: File = new File(datapath, "experiments/shapemi_scale_06_25")
+  //  val experimentPath: File = new File(datapath, "experiments/shapemi_scale_06_25")
   val experimentPath: File = new File(datapath, "experiments/shapemi_gauss_per_06_25") //
-//  val experimentPath: File = new File(datapath, "experiments/shapemi_skel_ablation_07_03") //
+  //  val experimentPath: File = new File(datapath, "experiments/shapemi_skel_ablation_07_03") //
 
   //  val experimentPath: File = new File(datapath, "experiments/test")
   val experimentLogPath: File = new File(experimentPath, "log")

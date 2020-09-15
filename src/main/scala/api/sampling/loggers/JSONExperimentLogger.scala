@@ -38,7 +38,7 @@ case class JSONExperimentLogger(filePath: File, modelPath: String = "") {
 
   import JsonExperimentProtocol._
 
-  private val datetimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+  val experiments: ListBuffer[jsonExperimentFormat] = new ListBuffer[jsonExperimentFormat]
 
   if (!filePath.getParentFile.exists()) {
     throw new IOException(s"JSON log path does not exist: ${filePath.getParentFile.toString}!")
@@ -59,8 +59,7 @@ case class JSONExperimentLogger(filePath: File, modelPath: String = "") {
   filePath.setReadable(true, false)
   filePath.setExecutable(true, false)
   filePath.setWritable(true, false)
-
-  val experiments: ListBuffer[jsonExperimentFormat] = new ListBuffer[jsonExperimentFormat]
+  private val datetimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
   def append(index: Int, targetPath: String = "", samplingEuclideanLoggerPath: String = "", samplingHausdorffLoggerPath: String = "", coeffInit: Seq[Double], coeffSamplingEuclidean: Seq[Double], coeffSamplingHausdorff: Seq[Double], coeffIcp: Seq[Double], samplingEuclidean: Map[String, Double], samplingHausdorff: Map[String, Double], icp: Map[String, Double], numOfEvaluationPoints: Int, numOfSamplePoints: Int, normalNoise: Double, comment: String): Unit = {
     experiments += jsonExperimentFormat(index = index, modelPath = modelPath, targetPath = targetPath, samplingEuclideanLoggerPath = samplingEuclideanLoggerPath, samplingHausdorffLoggerPath = samplingHausdorffLoggerPath, coeffInit = coeffInit, coeffSamplingEuclidean = coeffSamplingEuclidean, coeffSamplingHausdorff = coeffSamplingHausdorff, coeffIcp = coeffIcp,

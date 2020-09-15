@@ -19,15 +19,15 @@ package api.sampling.proposals
 import api.sampling.ModelFittingParameters
 import breeze.linalg.{DenseMatrix, DenseVector}
 import scalismo.sampling.{ProposalGenerator, SymmetricTransitionRatio, TransitionProbability}
-import scalismo.statisticalmodel.{MultivariateNormalDistribution, StatisticalLineMeshModel, StatisticalMeshModel}
+import scalismo.statisticalmodel.{MultivariateNormalDistribution, StatisticalLineMeshModel}
 import scalismo.utils.Random
 
 case class RandomShapeUpdateProposal(
-  model: StatisticalLineMeshModel,
-  stdev: Double,
-  generatedBy: String = "RandomShapeUpdateProposal"
-)(implicit random: Random)
-    extends ProposalGenerator[ModelFittingParameters]
+                                      model: StatisticalLineMeshModel,
+                                      stdev: Double,
+                                      generatedBy: String = "RandomShapeUpdateProposal"
+                                    )(implicit random: Random)
+  extends ProposalGenerator[ModelFittingParameters]
     with SymmetricTransitionRatio[ModelFittingParameters]
     with TransitionProbability[ModelFittingParameters] {
 
@@ -39,8 +39,8 @@ case class RandomShapeUpdateProposal(
   private val independentDistr = breeze.stats.distributions.Gaussian(0, stdev)
 
   override def propose(
-    theta: ModelFittingParameters
-  ): ModelFittingParameters = {
+                        theta: ModelFittingParameters
+                      ): ModelFittingParameters = {
     val currentCoeffs = theta.shapeParameters.parameters
     theta.copy(
       shapeParameters = theta.shapeParameters

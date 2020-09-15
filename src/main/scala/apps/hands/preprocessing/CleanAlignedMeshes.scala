@@ -2,15 +2,13 @@ package apps.hands.preprocessing
 
 import java.io.File
 
+import apps.hands.preprocessing.CreateHandReference.{getLmPoint, getPointsBetweenLMs}
 import apps.scalismoExtension.LineMeshConverter
-import scalismo.common.PointId
-import scalismo.common.UnstructuredPointsDomain.Create.CreateUnstructuredPointsDomain3D
+import apps.util.myPaths
 import scalismo.geometry._
 import scalismo.io.{LandmarkIO, MeshIO}
 import scalismo.mesh.{LineCell, LineList, LineMesh2D}
 import scalismo.ui.api.ScalismoUI
-import apps.hands.preprocessing.CreateHandReference.{getLmPoint, getPointsBetweenLMs}
-import apps.util.myPaths
 
 object CleanAlignedMeshes {
 
@@ -53,15 +51,15 @@ object CleanAlignedMeshes {
     val ref3D = LineMeshConverter.lineMesh2Dto3D(refCut2D)
     val ui = ScalismoUI()
     ui.show(ref3D, "ref")
-//    ui.show(CreateUnstructuredPointsDomain3D.create(points3D), "cut")
+    //    ui.show(CreateUnstructuredPointsDomain3D.create(points3D), "cut")
     ui.show(boundaryLMs, "boundary points")
 
     MeshIO.writeLineMesh[_2D](refCut2D, refMeshOutFile)
 
-    val filteredTargetLMs = refLMs3D.filter{
+    val filteredTargetLMs = refLMs3D.filter {
       f =>
         val p2D = Point2D(f.point.x, f.point.y)
-        (refCut2D.pointSet.findClosestPoint(p2D).point-p2D).norm < 2.0
+        (refCut2D.pointSet.findClosestPoint(p2D).point - p2D).norm < 2.0
     }
 
     println(s"Number of initial landmarks ${refLMs3D.length}")

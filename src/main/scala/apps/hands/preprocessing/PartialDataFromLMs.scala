@@ -24,15 +24,15 @@ object PartialDataFromLMs {
         point = Point2D(lm.point.x, lm.point.y),
         description = lm.description,
         uncertainty = lm.uncertainty
-    )
+      )
   )
   private val lmIds = lm2D.map(id => ref.pointSet.findClosestPoint(id.point).id)
 
   // target file, ground-truth 2D, partial 2D, partial 3D
   def getPartialData(
-    index: Int,
-    partial: Int
-  ): (File, LineMesh[_2D], LineMesh[_2D], LineMesh[_3D]) = {
+                      index: Int,
+                      partial: Int
+                    ): (File, LineMesh[_2D], LineMesh[_2D], LineMesh[_3D]) = {
     val dataPath = new File(myPaths.datapath, "registered/mesh")
     val dataFiles = dataPath
       .listFiles(
