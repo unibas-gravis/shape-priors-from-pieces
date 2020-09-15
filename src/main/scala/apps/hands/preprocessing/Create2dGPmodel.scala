@@ -11,7 +11,7 @@ import scalismo.io.MeshIO
 import scalismo.kernels.{GaussianKernel, MatrixValuedPDKernel}
 import scalismo.mesh.{LineMesh, LineMesh2D}
 import scalismo.numerics.Sampler
-import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess, StatisticalLineMeshModel}
+import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess, PointDistributionModel}
 import scalismo.ui.api.ScalismoUI
 import scalismo.utils.Random
 
@@ -41,7 +41,7 @@ object Create2dGPmodel {
 
   }
 
-  def createModel(ref: LineMesh2D, numberOfSamplePoints: Int, numBasisFunctions: Int = 100): StatisticalLineMeshModel = {
+  def createModel(ref: LineMesh2D, numberOfSamplePoints: Int, numBasisFunctions: Int = 100): PointDistributionModel[_2D, LineMesh] = {
     println("Num of points in ref: " + ref.pointSet.numberOfPoints)
 
     val zeroMean2D: Field[_2D, EuclideanVector[_2D]] = Field(EuclideanSpace[_2D], (_: Point[_2D]) => EuclideanVector.zeros[_2D])
@@ -83,7 +83,7 @@ object Create2dGPmodel {
 
     println(s"Number of components: ${lowRankGP2D.klBasis.length}")
 
-    val mm = StatisticalLineMeshModel(ref, lowRankGP2D)
+    val mm = PointDistributionModel(ref, lowRankGP2D)
     mm
   }
 

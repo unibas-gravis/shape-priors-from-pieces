@@ -7,7 +7,7 @@ import apps.hands.preprocessing.CreateHandReference.{getLmPoint, getPointsAround
 import apps.scalismoExtension.LineMeshConverter
 import apps.util.myPaths
 import scalismo.geometry._
-import scalismo.io.{LandmarkIO, MeshIO, StatisticalLineModelIO}
+import scalismo.io.{LandmarkIO, MeshIO, StatisticalModelIO}
 import scalismo.mesh._
 import scalismo.ui.api.ScalismoUI
 import scalismo.utils.Random.implicits._
@@ -25,7 +25,7 @@ object ComputeClosedformPosteriors {
     val middlePointId = s"finger.${fingerSeq(0)}.tip"
 
     // load model
-    val modelLineMesh = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+    val modelLineMesh = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
 
     // load target data
     val targetFile = new File(myPaths.datapath, s"registered/mesh/${targetname}.vtk")

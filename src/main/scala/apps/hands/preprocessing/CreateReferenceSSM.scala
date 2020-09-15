@@ -8,7 +8,7 @@ import apps.util.myPaths
 import scalismo.geometry.{Landmark, _2D, _3D}
 import scalismo.io.{LandmarkIO, MeshIO}
 import scalismo.mesh.{LineMesh, LineMesh2D}
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.statisticalmodel.dataset.DataCollection
 import scalismo.statisticalmodel.dataset.DataCollection.LineMeshDataCollection
 import scalismo.transformations.Scaling
@@ -80,10 +80,10 @@ object CreateReferenceSSM {
     VisualizeData.visualizePCsamples(ssm, ui, pcGroup, maxNumberOfComponents = 2)
   }
 
-  def computePCAmodel(ref: LineMesh2D, meshes: IndexedSeq[LineMesh[_2D]]): (StatisticalLineMeshModel, LineMeshDataCollection[_2D]) = {
+  def computePCAmodel(ref: LineMesh2D, meshes: IndexedSeq[LineMesh[_2D]]): (PointDistributionModel[_2D, LineMesh], LineMeshDataCollection[_2D]) = {
     println(s"Computing PCA model from ${meshes.length} meshes")
     val dc: LineMeshDataCollection[_2D] = DataCollection.fromLineMeshSequence[_2D](ref, meshes)
     val gpadc: LineMeshDataCollection[_2D] = dc
-    (StatisticalLineMeshModel.createUsingPCA(gpadc).get, gpadc)
+    (PointDistributionModel.createUsingPCA(gpadc), gpadc)
   }
 }

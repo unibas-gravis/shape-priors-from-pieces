@@ -24,11 +24,11 @@ import apps.scalismoExtension.LineMeshConverter
 import scalismo.common.UnstructuredPoints.Create.CreateUnstructuredPoints2D
 import scalismo.geometry.{EuclideanVector, _2D, _3D}
 import scalismo.mesh.{LineMesh, LineMesh3D}
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 
-case class LogHelper2D(file: File, model: StatisticalLineMeshModel, burnInPhase: Int = 200) {
+case class LogHelper2D(file: File, model: PointDistributionModel[_2D, LineMesh], burnInPhase: Int = 200) {
   println(s"Reading log file: ${file}")
-  val reference: LineMesh[_2D] = model.referenceMesh
+  val reference: LineMesh[_2D] = model.reference
   val logObj = new JSONAcceptRejectLogger[ModelFittingParameters](file)
   val log: IndexedSeq[jsonLogFormat] = logObj.loadLog()
 

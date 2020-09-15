@@ -18,12 +18,14 @@ package api.sampling.proposals
 
 import api.sampling.ModelFittingParameters
 import breeze.linalg.{DenseMatrix, DenseVector}
+import scalismo.geometry._2D
+import scalismo.mesh.LineMesh
 import scalismo.sampling.{ProposalGenerator, SymmetricTransitionRatio, TransitionProbability}
-import scalismo.statisticalmodel.{MultivariateNormalDistribution, StatisticalLineMeshModel}
+import scalismo.statisticalmodel.{MultivariateNormalDistribution, PointDistributionModel}
 import scalismo.utils.Random
 
 case class RandomShapeUpdateProposal(
-                                      model: StatisticalLineMeshModel,
+                                      model: PointDistributionModel[_2D, LineMesh],
                                       stdev: Double,
                                       generatedBy: String = "RandomShapeUpdateProposal"
                                     )(implicit random: Random)

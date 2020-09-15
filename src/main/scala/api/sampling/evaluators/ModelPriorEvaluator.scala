@@ -18,19 +18,12 @@ package api.sampling.evaluators
 
 import api.sampling.ModelFittingParameters
 import breeze.linalg.{DenseVector, diag}
+import scalismo.geometry._2D
+import scalismo.mesh.LineMesh
 import scalismo.sampling.DistributionEvaluator
-import scalismo.statisticalmodel.{MultivariateNormalDistribution, StatisticalLineMeshModel}
+import scalismo.statisticalmodel.{MultivariateNormalDistribution, PointDistributionModel}
 
-//case class ModelPriorEvaluator(model: StatisticalMeshModel) extends DistributionEvaluator[ModelFittingParameters] {
-//  val mvnormal = MultivariateNormalDistribution(DenseVector.zeros[Double](model.rank), diag(DenseVector.ones[Double](model.rank)))
-//
-//
-//  override def logValue(theta: ModelFittingParameters): Double = {
-//    mvnormal.logpdf(theta.shapeParameters.parameters)
-//  }
-//}
-
-case class ModelPriorEvaluator(model: StatisticalLineMeshModel) extends DistributionEvaluator[ModelFittingParameters] {
+case class ModelPriorEvaluator(model: PointDistributionModel[_2D, LineMesh]) extends DistributionEvaluator[ModelFittingParameters] {
   val mvnormal = MultivariateNormalDistribution(DenseVector.zeros[Double](model.rank), diag(DenseVector.ones[Double](model.rank)))
 
 

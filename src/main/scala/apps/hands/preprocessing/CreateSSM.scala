@@ -4,9 +4,9 @@ import java.io.File
 
 import apps.util.myPaths
 import scalismo.geometry._2D
-import scalismo.io.{MeshIO, StatisticalLineModelIO}
+import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.mesh.{LineMesh, LineMesh2D}
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.statisticalmodel.dataset.DataCollection
 import scalismo.statisticalmodel.dataset.DataCollection.LineMeshDataCollection
 
@@ -40,7 +40,7 @@ object CreateSSM {
 
     val modelFile = new File(myPaths.datapath, "hand2D_gp_s25_s50_s120_per.h5") // Just need the reference from the model!!!
 
-    val modelGPLineMesh = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+    val modelGPLineMesh = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
 
 
     println("Create SSMs from files on disk!")
@@ -109,13 +109,13 @@ object CreateSSM {
 
         meshFullFiles.foreach(f => println(f.getName))
 
-        val (pcaModelFull, _) = computePCAmodel(modelGPLineMesh.referenceMesh, meshesFull)
+        val (pcaModelFull, _) = computePCAmodel(modelGPLineMesh.reference, meshesFull)
 
-        val (pcaModelMAP, _) = computePCAmodel(modelGPLineMesh.referenceMesh, meshesMAPPartial)
+        val (pcaModelMAP, _) = computePCAmodel(modelGPLineMesh.reference, meshesMAPPartial)
 
-        val (pcaModelMEAN, _) = computePCAmodel(modelGPLineMesh.referenceMesh, meshesMEANPartial)
+        val (pcaModelMEAN, _) = computePCAmodel(modelGPLineMesh.reference, meshesMEANPartial)
 
-        val (pcaModelPartialInitial, _) = computePCAmodel(modelGPLineMesh.referenceMesh, meshesPartial)
+        val (pcaModelPartialInitial, _) = computePCAmodel(modelGPLineMesh.reference, meshesPartial)
         val pcaModelPartial = pcaModelPartialInitial.truncate(pcaModelFull.rank * 3)
 
         println("Writing models")
@@ -125,16 +125,16 @@ object CreateSSM {
         println(s"Sample model: ${pcaModelPartial.rank}")
 
         if (keepOutName == "FULLPCA") {
-          StatisticalLineModelIO.writeStatisticalLineMeshModel(pcaModelFull, new File(gtPath, s"pca_full.h5"))
-          StatisticalLineModelIO.writeStatisticalLineMeshModel(pcaModelMAP, new File(mapPath, s"pca_full_${p}.h5"))
-          StatisticalLineModelIO.writeStatisticalLineMeshModel(pcaModelMEAN, new File(meanPath, s"pca_full_${p}.h5"))
-          StatisticalLineModelIO.writeStatisticalLineMeshModel(pcaModelPartial, new File(samplePath, s"pca_full_${p}.h5"))
+          StatisticalModelIO.writeStatisticalLineMeshModel2D(pcaModelFull, new File(gtPath, s"pca_full.h5"))
+          StatisticalModelIO.writeStatisticalLineMeshModel2D(pcaModelMAP, new File(mapPath, s"pca_full_${p}.h5"))
+          StatisticalModelIO.writeStatisticalLineMeshModel2D(pcaModelMEAN, new File(meanPath, s"pca_full_${p}.h5"))
+          StatisticalModelIO.writeStatisticalLineMeshModel2D(pcaModelPartial, new File(samplePath, s"pca_full_${p}.h5"))
         }
         else {
-          StatisticalLineModelIO.writeStatisticalLineMeshModel(pcaModelFull, new File(gtPath, s"pca_keepOut_${keepOutName}.h5"))
-          StatisticalLineModelIO.writeStatisticalLineMeshModel(pcaModelMAP, new File(mapPath, s"pca_keepOut_${keepOutName}_${p}.h5"))
-          StatisticalLineModelIO.writeStatisticalLineMeshModel(pcaModelMEAN, new File(meanPath, s"pca_keepOut_${keepOutName}_${p}.h5"))
-          StatisticalLineModelIO.writeStatisticalLineMeshModel(pcaModelPartial, new File(samplePath, s"pca_keepOut_${keepOutName}_${p}.h5"))
+          StatisticalModelIO.writeStatisticalLineMeshModel2D(pcaModelFull, new File(gtPath, s"pca_keepOut_${keepOutName}.h5"))
+          StatisticalModelIO.writeStatisticalLineMeshModel2D(pcaModelMAP, new File(mapPath, s"pca_keepOut_${keepOutName}_${p}.h5"))
+          StatisticalModelIO.writeStatisticalLineMeshModel2D(pcaModelMEAN, new File(meanPath, s"pca_keepOut_${keepOutName}_${p}.h5"))
+          StatisticalModelIO.writeStatisticalLineMeshModel2D(pcaModelPartial, new File(samplePath, s"pca_keepOut_${keepOutName}_${p}.h5"))
         }
         //    val ui = ScalismoUI()
         //    val fullGroup = ui.createGroup("full")
@@ -152,11 +152,11 @@ object CreateSSM {
     println("All done!")
   }
 
-  def computePCAmodel(ref: LineMesh2D, meshes: IndexedSeq[LineMesh[_2D]]): (StatisticalLineMeshModel, LineMeshDataCollection[_2D]) = {
+  def computePCAmodel(ref: LineMesh2D, meshes: IndexedSeq[LineMesh[_2D]]): (PointDistributionModel[_2D, LineMesh], LineMeshDataCollection[_2D]) = {
     println(s"Computing PCA model from ${meshes.length} meshes")
     println(s"${ref.pointSet.numberOfPoints}, ${meshes.head.pointSet.numberOfPoints}")
     val dc: LineMeshDataCollection[_2D] = DataCollection.fromLineMeshSequence(ref, meshes)
     val gpadc: LineMeshDataCollection[_2D] = dc
-    (StatisticalLineMeshModel.createUsingPCA(gpadc).get, gpadc)
+    (PointDistributionModel.createUsingPCA(gpadc), gpadc)
   }
 }

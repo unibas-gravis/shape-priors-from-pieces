@@ -11,12 +11,12 @@ import apps.scalismoExtension.{LineMeshConverter, LineMeshOperator}
 import apps.util.myPaths
 import scalismo.common.{DiscreteField, UnstructuredPointsDomain}
 import scalismo.geometry._
-import scalismo.io.{MeshIO, StatisticalLineModelIO}
+import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.mesh._
 import scalismo.sampling.DistributionEvaluator
 import scalismo.sampling.proposals.MixtureProposal
 import scalismo.sampling.proposals.MixtureProposal.ProposalGeneratorWithTransition
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.ui.api.ScalismoUI
 import scalismo.utils.Random.implicits._
 
@@ -39,14 +39,13 @@ object Registration2D {
       LineMeshConverter.lineMesh2Dto3D(referenceLineMesh2D)
 
     val modelLineMesh =
-      StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).getOrElse {
+      StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).getOrElse {
         println(
           s"LineMesh model does not exist. Creating: ${modelFile.toString}"
         )
         val modelLineMesh =
           Create2dGPmodel.createModel(referenceLineMesh2D, 200, 100)
-        StatisticalLineModelIO
-          .writeStatisticalLineMeshModel(modelLineMesh, modelFile)
+        StatisticalModelIO.writeStatisticalLineMeshModel2D(modelLineMesh, modelFile)
         modelLineMesh
       }
 
@@ -209,7 +208,7 @@ object Registration2D {
   }
 
   def fitting(
-               model: StatisticalLineMeshModel,
+               model: PointDistributionModel[_2D, LineMesh],
                targetMesh: LineMesh2D,
                evaluator: Map[String, DistributionEvaluator[ModelFittingParameters]],
                proposal: ProposalGeneratorWithTransition[ModelFittingParameters],

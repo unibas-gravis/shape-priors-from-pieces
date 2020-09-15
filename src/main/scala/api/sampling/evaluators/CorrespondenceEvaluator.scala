@@ -19,10 +19,11 @@ package api.sampling.evaluators
 import api.sampling.ModelFittingParameters
 import scalismo.common.PointId
 import scalismo.geometry.{Point, _2D}
+import scalismo.mesh.LineMesh
 import scalismo.sampling.DistributionEvaluator
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 
-case class CorrespondenceEvaluator(model: StatisticalLineMeshModel,
+case class CorrespondenceEvaluator(model: PointDistributionModel[_2D, LineMesh],
                                    correspondences: Seq[(PointId, Point[_2D])], uncertainty: Double)
   extends DistributionEvaluator[ModelFittingParameters] {
 

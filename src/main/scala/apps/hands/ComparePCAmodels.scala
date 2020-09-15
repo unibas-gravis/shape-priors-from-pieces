@@ -4,9 +4,9 @@ import java.io._
 
 import apps.util.myPaths
 import scalismo.geometry._2D
-import scalismo.io.{MeshIO, StatisticalLineModelIO}
+import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.mesh.LineMesh
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.statisticalmodel.dataset.DataCollection.LineMeshDataCollection
 import scalismo.statisticalmodel.dataset.{DataCollection, LineModelMetrics}
 import scalismo.utils.Random.implicits._
@@ -53,7 +53,7 @@ object ComparePCAmodels {
     val fullRes: Array[IndexedSeq[Double]] = gtDatasetFiles.map { f =>
       val name = f.getName.replace(".vtk", "")
       val modelFile = new File(pcaPath, s"gt/pca_keepOut_${name}.h5")
-      val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+      val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
       val keepOutMesh = MeshIO.readLineMesh2D(f).get
       val res: IndexedSeq[Double] = computeGeneralization(fullModel, keepOutMesh)
       //      println(s"Model: ${modelFile}, PC: ${fullModel.rank}, keepOut: ${name}")
@@ -68,7 +68,7 @@ object ComparePCAmodels {
       val fullMAPRes: Array[IndexedSeq[Double]] = gtDatasetFiles.map { f =>
         val name = f.getName.replace(".vtk", "")
         val modelFile = new File(pcaPath, s"map/pca_keepOut_${name}_${p}.h5")
-        val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+        val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
         val keepOutMesh = MeshIO.readLineMesh2D(f).get
         val res: IndexedSeq[Double] = computeGeneralization(fullModel, keepOutMesh)
         //      println(s"Model: ${modelFile}, PC: ${fullModel.rank}, keepOut: ${name}")
@@ -84,7 +84,7 @@ object ComparePCAmodels {
       val fullMAPRes: Array[IndexedSeq[Double]] = gtDatasetFiles.map { f =>
         val name = f.getName.replace(".vtk", "")
         val modelFile = new File(pcaPath, s"mean/pca_keepOut_${name}_${p}.h5")
-        val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+        val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
         val keepOutMesh = MeshIO.readLineMesh2D(f).get
         val res: IndexedSeq[Double] = computeGeneralization(fullModel, keepOutMesh)
         //      println(s"Model: ${modelFile}, PC: ${fullModel.rank}, keepOut: ${name}")
@@ -100,7 +100,7 @@ object ComparePCAmodels {
       val fullSAMPLERes: Array[IndexedSeq[Double]] = gtDatasetFiles.map { f =>
         val name = f.getName.replace(".vtk", "")
         val modelFile = new File(pcaPath, s"sample/pca_keepOut_${name}_${p}.h5")
-        val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+        val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
         val keepOutMesh = MeshIO.readLineMesh2D(f).get
         val res: IndexedSeq[Double] = computeGeneralization(fullModel, keepOutMesh)
         //      println(s"Model: ${modelFile}, PC: ${fullModel.rank}, keepOut: ${name}")
@@ -119,28 +119,28 @@ object ComparePCAmodels {
     val gtDataset = gtDatasetFiles.map(f => MeshIO.readLineMesh2D(f).get).toIndexedSeq
 
     println("Full model")
-    val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(new File(pcaPath, "gt/pca_full.h5")).get
+    val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(new File(pcaPath, "gt/pca_full.h5")).get
     println(computeSpecificity(fullModel, gtDataset))
 
     println("MAP models")
     val MAPdatasetFiles = new File(pcaPath, "map").listFiles(f => f.getName.endsWith(".h5") && f.getName.startsWith("pca_full_")).sorted
     MAPdatasetFiles.foreach { f =>
       println(s"Model: ${f.getName}")
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(f).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(f).get
       println(computeSpecificity(model, gtDataset))
     }
     println("MEAN models")
     val MEANdatasetFiles = new File(pcaPath, "map").listFiles(f => f.getName.endsWith(".h5") && f.getName.startsWith("pca_full_")).sorted
     MEANdatasetFiles.foreach { f =>
       println(s"Model: ${f.getName}")
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(f).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(f).get
       println(computeSpecificity(model, gtDataset))
     }
     println("Sample models")
     val SAMPLEdatasetFiles = new File(pcaPath, "sample").listFiles(f => f.getName.endsWith(".h5") && f.getName.startsWith("pca_full_")).sorted
     SAMPLEdatasetFiles.foreach { f =>
       println(s"Model: ${f.getName}")
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(f).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(f).get
       println(computeSpecificity(model, gtDataset))
     }
   }
@@ -151,28 +151,28 @@ object ComparePCAmodels {
     val gtDataset = gtDatasetFiles.map(f => MeshIO.readLineMesh2D(f).get).toIndexedSeq
 
     println("Full model")
-    val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(new File(pcaPath, "gt/pca_full.h5")).get
+    val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(new File(pcaPath, "gt/pca_full.h5")).get
     println(computeCompactness(fullModel))
 
     println("MAP models")
     val MAPdatasetFiles = new File(pcaPath, "map").listFiles(f => f.getName.endsWith(".h5") && f.getName.startsWith("pca_full_")).sorted
     MAPdatasetFiles.foreach { f =>
       println(s"Model: ${f.getName}")
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(f).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(f).get
       println(computeCompactness(model))
     }
     println("MEAN models")
     val MEANdatasetFiles = new File(pcaPath, "mean").listFiles(f => f.getName.endsWith(".h5") && f.getName.startsWith("pca_full_")).sorted
     MEANdatasetFiles.foreach { f =>
       println(s"Model: ${f.getName}")
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(f).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(f).get
       println(computeCompactness(model))
     }
     println("Sample models")
     val SAMPLEdatasetFiles = new File(pcaPath, "sample").listFiles(f => f.getName.endsWith(".h5") && f.getName.startsWith("pca_full_")).sorted
     SAMPLEdatasetFiles.foreach { f =>
       println(s"Model: ${f.getName}")
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(f).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(f).get
       println(computeCompactness(model))
     }
   }
@@ -195,7 +195,7 @@ object ComparePCAmodels {
 
     println("GT model")
     val gtModelFile = new File(pcaPath, "gt/pca_full.h5")
-    val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(gtModelFile).get
+    val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(gtModelFile).get
 
     logger += jsonModelComparisonFormatClass(
       "gt",
@@ -211,7 +211,7 @@ object ComparePCAmodels {
     MAPdatasetFiles.par.foreach { f =>
       val cleanModelName = f.getName.replace(".h5", "")
       val percentage = cleanModelName.split("_").last.toInt
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(f).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(f).get
       println(s"Model: ${f.getName} with ${percentage}%")
 
       logger += jsonModelComparisonFormatClass(
@@ -229,7 +229,7 @@ object ComparePCAmodels {
     MEANdatasetFiles.par.foreach { f =>
       val cleanModelName = f.getName.replace(".h5", "")
       val percentage = cleanModelName.split("_").last.toInt
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(f).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(f).get
       println(s"Model: ${f.getName} with ${percentage}%")
 
       logger += jsonModelComparisonFormatClass(
@@ -247,7 +247,7 @@ object ComparePCAmodels {
     SAMPLEdatasetFiles.par.foreach { f =>
       val cleanModelName = f.getName.replace(".h5", "")
       val percentage = cleanModelName.split("_").last.toInt
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(f).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(f).get
       println(s"Model: ${f.getName} with ${percentage}%")
 
       logger += jsonModelComparisonFormatClass(
@@ -262,7 +262,7 @@ object ComparePCAmodels {
     logger
   }
 
-  def computeCompactness(model: StatisticalLineMeshModel): IndexedSeq[Double] = {
+  def computeCompactness(model: PointDistributionModel[_2D, LineMesh]): IndexedSeq[Double] = {
     (1 to model.rank).map { i =>
       model.gp.variance.data.take(i).sum
     }
@@ -271,9 +271,9 @@ object ComparePCAmodels {
   // 10.000 samples used in the original paper
   // Minimal model specificity is important when newly generated objects need to be correct.
   // For shape analysis this is less important.
-  def computeSpecificity(model: StatisticalLineMeshModel, trainingData: Seq[LineMesh[_2D]]): IndexedSeq[Double] = {
+  def computeSpecificity(model: PointDistributionModel[_2D, LineMesh], trainingData: Seq[LineMesh[_2D]]): IndexedSeq[Double] = {
     (1 to model.rank).map { i =>
-      val tmp = LineModelMetrics.specificity(model.truncate(i).pdm, trainingData, 1000)
+      val tmp = LineModelMetrics.specificity(model.truncate(i), trainingData, 1000)
       //      BigDecimal(tmp).setScale(4, BigDecimal.RoundingMode.HALF_UP).toDouble
       tmp
     }
@@ -284,7 +284,7 @@ object ComparePCAmodels {
     val fullRes: Array[IndexedSeq[Double]] = gtDatasetFiles.map { f =>
       val name = f.getName.replace(".vtk", "")
       val modelFile = new File(pcaPath, s"gt/pca_keepOut_${name}.h5")
-      val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+      val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
       val keepOutMesh = MeshIO.readLineMesh2D(f).get
       val res: IndexedSeq[Double] = computeGeneralization(fullModel, keepOutMesh)
       res
@@ -297,7 +297,7 @@ object ComparePCAmodels {
     val fullMAPRes: Array[IndexedSeq[Double]] = gtDatasetFiles.map { f =>
       val name = f.getName.replace(".vtk", "")
       val modelFile = new File(pcaPath, s"${specifier}/pca_keepOut_${name}_${percentage}.h5")
-      val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+      val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
       val keepOutMesh = MeshIO.readLineMesh2D(f).get
       val res: IndexedSeq[Double] = computeGeneralization(fullModel, keepOutMesh)
       res
@@ -305,10 +305,10 @@ object ComparePCAmodels {
     reduceResults(fullMAPRes)
   }
 
-  def computeGeneralization(model: StatisticalLineMeshModel, mesh: LineMesh[_2D]): IndexedSeq[Double] = {
-    val dc: LineMeshDataCollection[_2D] = DataCollection.fromLineMeshSequence[_2D](model.referenceMesh, Seq(mesh))
+  def computeGeneralization(model: PointDistributionModel[_2D, LineMesh], mesh: LineMesh[_2D]): IndexedSeq[Double] = {
+    val dc: LineMeshDataCollection[_2D] = DataCollection.fromLineMeshSequence[_2D](model.reference, Seq(mesh))
     val res = (1 to model.rank).map { i =>
-      val tmp = LineModelMetrics.generalization(model.truncate(i).pdm, dc).get
+      val tmp = LineModelMetrics.generalization(model.truncate(i), dc).get
       //      BigDecimal(tmp).setScale(4, BigDecimal.RoundingMode.HALF_UP).toDouble
       tmp
     }
@@ -325,7 +325,7 @@ object ComparePCAmodels {
     val fullSAMPLERes: Array[IndexedSeq[Double]] = gtDatasetFiles.map { f =>
       val name = f.getName.replace(".vtk", "")
       val modelFile = new File(pcaPath, s"sample/pca_keepOut_${name}_${percentage}.h5")
-      val fullModel = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+      val fullModel = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
       val keepOutMesh = MeshIO.readLineMesh2D(f).get
       val res: IndexedSeq[Double] = computeGeneralization(fullModel, keepOutMesh)
       res

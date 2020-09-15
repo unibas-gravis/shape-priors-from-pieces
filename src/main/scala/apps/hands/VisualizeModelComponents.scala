@@ -3,7 +3,7 @@ package apps.hands
 import java.io.File
 
 import apps.util.myPaths
-import scalismo.io.StatisticalLineModelIO
+import scalismo.io.StatisticalModelIO
 import scalismo.ui.api.ScalismoUI
 
 object VisualizeModelComponents {
@@ -17,7 +17,7 @@ object VisualizeModelComponents {
 
     val ui = ScalismoUI()
     val gtModelFile = new File(myPaths.datapath, s"pca_overlap/gt/pca_full.h5")
-    val gtModel = StatisticalLineModelIO.readStatisticalLineMeshModel(gtModelFile).get
+    val gtModel = StatisticalModelIO.readStatisticalLineMeshModel2D(gtModelFile).get
     val modelGroup = ui.createGroup("GT")
     VisualizeData.visualizePCsamples(gtModel, ui, modelGroup)
 
@@ -26,7 +26,7 @@ object VisualizeModelComponents {
     Seq(5, 10, 15, 20, 30, 40, 50, 60, 70, 80).foreach { p =>
       val modelFile = new File(myPaths.datapath, s"pca_overlap/sample/pca_full_${p}.h5")
 
-      val model = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+      val model = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
 
       val modelGroup = ui.createGroup(s"sample-${p}")
       VisualizeData.visualizePCsamples(model, ui, modelGroup)

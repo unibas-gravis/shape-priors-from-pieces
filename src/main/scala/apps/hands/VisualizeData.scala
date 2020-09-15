@@ -6,13 +6,15 @@ import java.io.File
 import apps.scalismoExtension.LineMeshConverter
 import apps.util.myPaths
 import breeze.linalg.DenseVector
+import scalismo.geometry._2D
 import scalismo.io.MeshIO
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.mesh.LineMesh
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.ui.api.{Group, ScalismoUI}
 
 object VisualizeData {
 
-  def visualizePCsamples(model: StatisticalLineMeshModel, ui: ScalismoUI, group: Group, maxNumberOfComponents: Int = 3) = {
+  def visualizePCsamples(model: PointDistributionModel[_2D, LineMesh], ui: ScalismoUI, group: Group, maxNumberOfComponents: Int = 3) = {
     (0 to math.min(maxNumberOfComponents, model.rank - 1)).foreach { pc =>
       (-3 to 3).foreach { i =>
         var coeff = DenseVector.zeros[Double](model.rank)

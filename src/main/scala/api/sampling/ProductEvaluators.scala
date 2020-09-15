@@ -22,7 +22,7 @@ import scalismo.geometry.{Landmark, Point, _2D}
 import scalismo.mesh.LineMesh
 import scalismo.sampling.DistributionEvaluator
 import scalismo.sampling.evaluators.ProductEvaluator
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.utils.Random.implicits._
 
 object ProductEvaluators {
@@ -37,11 +37,11 @@ object ProductEvaluators {
     evaluatorMap
   }
 
-  def proximityAndCorrespondence(model: StatisticalLineMeshModel, modelLMs: Seq[Landmark[_2D]], targetLMs: Seq[Landmark[_2D]]): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
+  def proximityAndCorrespondence(model: PointDistributionModel[_2D, LineMesh], modelLMs: Seq[Landmark[_2D]], targetLMs: Seq[Landmark[_2D]]): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
 
     val commonNames = modelLMs.map(_.id) intersect targetLMs.map(_.id)
     val landmarksPairs = commonNames.map(name => (modelLMs.find(_.id == name).get, targetLMs.find(_.id == name).get))
-    val posPoints: Seq[(PointId, Point[_2D])] = landmarksPairs.map(f => (model.referenceMesh.pointSet.findClosestPoint(f._1.point).id, f._2.point)).toSeq
+    val posPoints: Seq[(PointId, Point[_2D])] = landmarksPairs.map(f => (model.reference.pointSet.findClosestPoint(f._1.point).id, f._2.point)).toSeq
 
     val corrEval = CorrespondenceEvaluator(model, posPoints, 1.0)
     val evalProximity = ModelPriorEvaluator(model)
@@ -59,7 +59,7 @@ object ProductEvaluators {
     evaluatorMap
   }
 
-  def proximityAndIndependent(model: StatisticalLineMeshModel, target: LineMesh[_2D], evaluationMode: EvaluationMode, uncertainty: Double = 1.0, numberOfEvaluationPoints: Int = 100): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
+  def proximityAndIndependent(model: PointDistributionModel[_2D, LineMesh], target: LineMesh[_2D], evaluationMode: EvaluationMode, uncertainty: Double = 1.0, numberOfEvaluationPoints: Int = 100): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
     val likelihoodIndependent = breeze.stats.distributions.Gaussian(0, uncertainty)
 
     val indepPointEval = IndependentPointDistanceEvaluator(model, target, likelihoodIndependent, evaluationMode, numberOfEvaluationPoints)
@@ -78,14 +78,14 @@ object ProductEvaluators {
     evaluatorMap
   }
 
-  def proximityCorrespondenceAndIndependent(model: StatisticalLineMeshModel, target: LineMesh[_2D], modelLMs: Seq[Landmark[_2D]], targetLMs: Seq[Landmark[_2D]], evaluationMode: EvaluationMode, uncertainty: Double = 1.0, numberOfEvaluationPoints: Int = 100): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
+  def proximityCorrespondenceAndIndependent(model: PointDistributionModel[_2D, LineMesh], target: LineMesh[_2D], modelLMs: Seq[Landmark[_2D]], targetLMs: Seq[Landmark[_2D]], evaluationMode: EvaluationMode, uncertainty: Double = 1.0, numberOfEvaluationPoints: Int = 100): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
     println(s"Number of model LM ${modelLMs.length}")
     println(s"Number of target LM ${targetLMs.length}")
     val commonNames = modelLMs.map(_.id) intersect targetLMs.map(_.id)
     println(s"Number of common LM ${commonNames.length}")
     println(commonNames)
     val landmarksPairs = commonNames.map(name => (modelLMs.find(_.id == name).get, targetLMs.find(_.id == name).get))
-    val posPoints: Seq[(PointId, Point[_2D])] = landmarksPairs.map(f => (model.referenceMesh.pointSet.findClosestPoint(f._1.point).id, f._2.point)).toSeq
+    val posPoints: Seq[(PointId, Point[_2D])] = landmarksPairs.map(f => (model.reference.pointSet.findClosestPoint(f._1.point).id, f._2.point)).toSeq
 
     val corrEval = CorrespondenceEvaluator(model, posPoints, 1.0)
 
@@ -109,7 +109,7 @@ object ProductEvaluators {
     evaluatorMap
   }
 
-  def proximityAndHausdorff(model: StatisticalLineMeshModel, target: LineMesh[_2D], uncertainty: Double = 1.0): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
+  def proximityAndHausdorff(model: PointDistributionModel[_2D, LineMesh], target: LineMesh[_2D], uncertainty: Double = 1.0): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
     val likelihoodIndependent = breeze.stats.distributions.Exponential(uncertainty)
 
     val indepPointEval = HausdorffDistanceEvaluator(model, target, likelihoodIndependent)
@@ -128,7 +128,7 @@ object ProductEvaluators {
     evaluatorMap
   }
 
-  def proximityAndCollectiveHausdorffBoundaryAware(model: StatisticalLineMeshModel, target: LineMesh[_2D], evaluationMode: EvaluationMode, uncertaintyAvg: Double = 1.0, uncertaintyMax: Double = 5.0, mean: Double = 0.0, numberOfEvaluationPoints: Int = 100): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
+  def proximityAndCollectiveHausdorffBoundaryAware(model: PointDistributionModel[_2D, LineMesh], target: LineMesh[_2D], evaluationMode: EvaluationMode, uncertaintyAvg: Double = 1.0, uncertaintyMax: Double = 5.0, mean: Double = 0.0, numberOfEvaluationPoints: Int = 100): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
     val likelihoodCollective = breeze.stats.distributions.Gaussian(mean, uncertaintyAvg)
     val likelihoodMax = breeze.stats.distributions.Exponential(uncertaintyMax)
 

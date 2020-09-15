@@ -9,10 +9,10 @@ import breeze.linalg.DenseMatrix
 import scalismo.common.interpolation.NearestNeighborInterpolator
 import scalismo.common.{Domain, EuclideanSpace, Field}
 import scalismo.geometry._
-import scalismo.io.{LandmarkIO, MeshIO, StatisticalLineModelIO}
+import scalismo.io.{LandmarkIO, MeshIO, StatisticalModelIO}
 import scalismo.kernels.{GaussianKernel, MatrixValuedPDKernel}
 import scalismo.mesh.LineMesh
-import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess, StatisticalLineMeshModel}
+import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess, PointDistributionModel}
 import scalismo.ui.api.ScalismoUI
 
 object Create2DPerpendicularGP {
@@ -71,7 +71,7 @@ object Create2DPerpendicularGP {
       interpolator = NearestNeighborInterpolator()
     )
 
-    val ssm = StatisticalLineMeshModel(referenceMesh, lowRankGP)
+    val ssm = PointDistributionModel(referenceMesh, lowRankGP)
 
     //    val ssm = StatisticalLineModelIO.readStatisticalLineMeshModel(new File(myPaths.datapath, "testhand2D_gp_s40_s100.h5")).get
 
@@ -82,7 +82,7 @@ object Create2DPerpendicularGP {
 
     val sampleGroup = ui.createGroup("samples")
 
-    ui.show(sampleGroup, LineMeshConverter.lineMesh2Dto3D(ssm.referenceMesh), "reference")
+    ui.show(sampleGroup, LineMeshConverter.lineMesh2Dto3D(ssm.reference), "reference")
     (1 to 10).foreach(i => {
       val sample = ssm.sample()
       ui.show(sampleGroup, LineMeshConverter.lineMesh2Dto3D(sample), s"sample$i").opacity = 0
@@ -95,7 +95,7 @@ object Create2DPerpendicularGP {
     //    val lms = lmsAll.map(p => (p.id,Point2D(p.point.x,p.point.y)))
     println("finished")
 
-    StatisticalLineModelIO.writeStatisticalLineMeshModel(ssm, new File(myPaths.datapath, "hand2D_gp_s25_s50_s120_ablation.h5"))
+    StatisticalModelIO.writeStatisticalLineMeshModel2D(ssm, new File(myPaths.datapath, "hand2D_gp_s25_s50_s120_ablation.h5"))
 
     VisualizeData.visualizePCsamples(ssm, ui, pcGroup)
 
@@ -179,7 +179,7 @@ object Create2DPerpendicularGP {
     }
   }
 
-  def augmentPerpendiculars(model: StatisticalLineMeshModel, pairs: IndexedSeq[(Point[_2D], Point[_2D])], sigma2: Double): Unit = {
+  def augmentPerpendiculars(model: PointDistributionModel[_2D, LineMesh], pairs: IndexedSeq[(Point[_2D], Point[_2D])], sigma2: Double): Unit = {
     ???
   }
 

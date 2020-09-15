@@ -23,10 +23,10 @@ import scalismo.common.PointId
 import scalismo.geometry.{Point, _2D}
 import scalismo.mesh.LineMesh
 import scalismo.sampling.DistributionEvaluator
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.utils.Random
 
-case class CollectiveAverageHausdorffDistanceBoundaryAwareEvaluator(model: StatisticalLineMeshModel,
+case class CollectiveAverageHausdorffDistanceBoundaryAwareEvaluator(model: PointDistributionModel[_2D, LineMesh],
                                                                     targetMesh: LineMesh[_2D],
                                                                     likelihoodModelAvg: ContinuousDistr[Double],
                                                                     likelihoodModelMax: ContinuousDistr[Double],
@@ -38,12 +38,12 @@ case class CollectiveAverageHausdorffDistanceBoundaryAwareEvaluator(model: Stati
   private val randomPointsOnTarget = getRandomPointsOnTarget
 
   def getRandomPointIdsOnModel: IndexedSeq[PointId] = {
-    if (numberOfPointsForComparison >= model.referenceMesh.pointSet.numberOfPoints) {
-      model.referenceMesh.pointSet.pointIds.toIndexedSeq
+    if (numberOfPointsForComparison >= model.reference.pointSet.numberOfPoints) {
+      model.reference.pointSet.pointIds.toIndexedSeq
     }
     else {
-      DummySampler2D(model.referenceMesh, numberOfPointsForComparison).sample().map(_._1)
-        .map(p => model.referenceMesh.pointSet.findClosestPoint(p).id)
+      DummySampler2D(model.reference, numberOfPointsForComparison).sample().map(_._1)
+        .map(p => model.reference.pointSet.findClosestPoint(p).id)
     }
   }
 

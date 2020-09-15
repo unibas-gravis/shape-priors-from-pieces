@@ -4,7 +4,7 @@ import java.io.File
 
 import apps.scalismoExtension.LineMeshConverter
 import apps.util.{LogHelper2D, myPaths}
-import scalismo.io.{MeshIO, StatisticalLineModelIO}
+import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.ui.api.ScalismoUI
 
 import scala.collection.parallel.{ForkJoinTaskSupport, ParSeq}
@@ -53,7 +53,7 @@ object Visualize2Dlog {
     val fingers = Seq(fingerSeq(2))
     //    val middlePointId = s"finger.${finger}.tip"
 
-    val modelLineMesh = StatisticalLineModelIO.readStatisticalLineMeshModel(modelFile).get
+    val modelLineMesh = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
 
     val targetNames: ParSeq[String] = targetnameSeq.flatMap { tn =>
       fingers.flatMap { finger =>

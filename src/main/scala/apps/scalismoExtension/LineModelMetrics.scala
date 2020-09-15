@@ -4,7 +4,7 @@ import api.other.LineMeshMetrics2D
 import scalismo.common.DomainWarp
 import scalismo.geometry.{EuclideanVector, _2D}
 import scalismo.mesh.LineMesh
-import scalismo.statisticalmodel.{PointDistributionModel, StatisticalLineMeshModel}
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.utils.Random
 
 import scala.collection.parallel.immutable.ParVector

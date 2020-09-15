@@ -30,15 +30,15 @@ import scalismo.sampling.algorithms.MetropolisHastings
 import scalismo.sampling.loggers.ChainStateLogger.implicits._
 import scalismo.sampling.loggers.{BestSampleLogger, ChainStateLoggerContainer}
 import scalismo.sampling.proposals.MixtureProposal
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.ui.api.SimpleAPI
 import scalismo.utils.Random
 
 
-class SamplingRegistration(model: StatisticalLineMeshModel, sample: LineMesh2D, modelUi: Option[SimpleAPI] = None, modelUiUpdateInterval: Int = 1000, acceptInfoPrintInterval: Int = 10000) {
+class SamplingRegistration(model: PointDistributionModel[_2D, LineMesh], sample: LineMesh2D, modelUi: Option[SimpleAPI] = None, modelUiUpdateInterval: Int = 1000, acceptInfoPrintInterval: Int = 10000) {
   implicit val random: Random = Random(1024)
 
-  val rotatCenter2D: EuclideanVector[_2D] = model.referenceMesh.pointSet.points.map(_.toVector).reduce(_ + _) * 1.0 / model.referenceMesh.pointSet.numberOfPoints.toDouble
+  val rotatCenter2D: EuclideanVector[_2D] = model.reference.pointSet.points.map(_.toVector).reduce(_ + _) * 1.0 / model.reference.pointSet.numberOfPoints.toDouble
   val rotatCenter3D: EuclideanVector[_3D] = EuclideanVector3D(rotatCenter2D.x, rotatCenter2D.y, 0.0)
   val initPoseParameters = PoseParameters(EuclideanVector3D(0, 0, 0), (0, 0, 0), rotationCenter = rotatCenter3D.toPoint)
   val initShapeParameters = ShapeParameters(DenseVector.zeros[Double](model.rank))

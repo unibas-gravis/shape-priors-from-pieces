@@ -25,11 +25,11 @@ import scalismo.common.{Field, PointId}
 import scalismo.geometry._
 import scalismo.mesh.{LineMesh, LineMesh2D}
 import scalismo.sampling.{ProposalGenerator, TransitionProbability}
-import scalismo.statisticalmodel.{LowRankGaussianProcess, MultivariateNormalDistribution, StatisticalLineMeshModel}
+import scalismo.statisticalmodel.{LowRankGaussianProcess, MultivariateNormalDistribution, PointDistributionModel}
 import scalismo.utils.Memoize
 
 case class NonRigidIcpProposal(
-                                model: StatisticalLineMeshModel,
+                                model: PointDistributionModel[_2D, LineMesh],
                                 target: LineMesh2D,
                                 modelLMs: Seq[Landmark[_2D]],
                                 targetLMs: Seq[Landmark[_2D]],
@@ -51,11 +51,11 @@ case class NonRigidIcpProposal(
   val landmarksPairs = commonNames.map(name => (modelLMs.find(_.id == name).get, targetLMs.find(_.id == name).get))
 
   //  private val targetMesh = TriangleMesh3D(LineMeshConverter.PointDomain2Dto3D(target.pointSet).points.toIndexedSeq, TriangleList(IndexedSeq()))
-  val correspondenceLandmarkPoints: IndexedSeq[(PointId, Point[_2D], MultivariateNormalDistribution, Boolean)] = landmarksPairs.map(f => (model.referenceMesh.pointSet.findClosestPoint(f._1.point).id, f._2.point, MultivariateNormalDistribution(DenseVector.zeros[Double](2), diag(DenseVector.ones[Double](2))), false)).toIndexedSeq
-  private val referenceMesh = model.referenceMesh
+  val correspondenceLandmarkPoints: IndexedSeq[(PointId, Point[_2D], MultivariateNormalDistribution, Boolean)] = landmarksPairs.map(f => (model.reference.pointSet.findClosestPoint(f._1.point).id, f._2.point, MultivariateNormalDistribution(DenseVector.zeros[Double](2), diag(DenseVector.ones[Double](2))), false)).toIndexedSeq
+  private val referenceMesh = model.reference
   private val cashedPosterior: Memoize[ModelFittingParameters, LowRankGaussianProcess[_2D, EuclideanVector[_2D]]] = Memoize(icpPosterior, 20)
   //  private val modelRefLine2D: LineMesh2D = model.referenceMesh//LineMeshConverter.pointCloudto2DLineMesh(model.referenceMesh.pointSet)
-  private val modelIds: IndexedSeq[PointId] = scala.util.Random.shuffle(model.referenceMesh.pointSet.pointIds.toIndexedSeq).take(numOfSamplePoints)
+  private val modelIds: IndexedSeq[PointId] = scala.util.Random.shuffle(model.reference.pointSet.pointIds.toIndexedSeq).take(numOfSamplePoints)
   //  private val targetPoints2D: IndexedSeq[Point[_2D]] = scala.util.Random.shuffle(target.pointSet.points.toIndexedSeq).take(numOfSamplePoints)
   private val targetPoints2Dids: IndexedSeq[PointId] = scala.util.Random.shuffle(target.pointSet.pointIds.toIndexedSeq).take(numOfSamplePoints)
 
@@ -129,7 +129,7 @@ case class NonRigidIcpProposal(
       //      println(s"ModelBasedClosestPoint, correspondence ${correspondenceFiltered.length}")
 
       for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
-        val referencePoint = model.referenceMesh.pointSet.point(pointId)
+        val referencePoint = model.reference.pointSet.point(pointId)
         (referencePoint, targetPoint - referencePoint, uncertainty)
       }
     }
@@ -160,7 +160,7 @@ case class NonRigidIcpProposal(
       val correspondenceFiltered = if (useLandmarkCorrespondence) correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
 
       for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
-        val referencePoint = model.referenceMesh.pointSet.point(pointId)
+        val referencePoint = model.reference.pointSet.point(pointId)
         (referencePoint, targetPoint - referencePoint, uncertainty)
       }
     }
@@ -190,7 +190,7 @@ case class NonRigidIcpProposal(
       val correspondenceFiltered = if (useLandmarkCorrespondence) correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
 
       for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
-        val referencePoint = model.referenceMesh.pointSet.point(pointId)
+        val referencePoint = model.reference.pointSet.point(pointId)
         // (reference point, deformation vector in model space starting from reference, usually zero-mean observation uncertainty)
         (referencePoint, targetPoint - referencePoint, uncertainty)
       }

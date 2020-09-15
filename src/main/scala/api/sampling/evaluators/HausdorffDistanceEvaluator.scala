@@ -19,11 +19,12 @@ package api.sampling.evaluators
 import api.other.LineMeshMetrics2D
 import api.sampling.ModelFittingParameters
 import breeze.stats.distributions.ContinuousDistr
-import scalismo.mesh.LineMesh2D
+import scalismo.geometry._2D
+import scalismo.mesh.{LineMesh, LineMesh2D}
 import scalismo.sampling.DistributionEvaluator
-import scalismo.statisticalmodel.StatisticalLineMeshModel
+import scalismo.statisticalmodel.PointDistributionModel
 
-case class HausdorffDistanceEvaluator(model: StatisticalLineMeshModel,
+case class HausdorffDistanceEvaluator(model: PointDistributionModel[_2D, LineMesh],
                                       targetMesh: LineMesh2D,
                                       likelihoodModel: ContinuousDistr[Double]
                                      )

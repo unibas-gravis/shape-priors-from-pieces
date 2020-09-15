@@ -44,9 +44,6 @@ object LineMeshConverter {
     var linecells: Set[LineCell] = Set()
     pd2d.pointIds.toIndexedSeq.foreach { id =>
       val p = pd.point(id)
-      //      val closest = pd.findNClosestPoints(p, 3).map(_.id).filter(i => i != id)
-      //      linecells += LineCell(id, closest.head)
-      //      linecells += LineCell(id, closest.last)
       val closest = pd.findNClosestPoints(p, 2).last.id
       linecells += LineCell(id, closest)
     }
@@ -113,7 +110,7 @@ object LineMeshConverter {
         val points = cell.pointIds.map(pointId => meshPoints(pointId.id))
         (
           points,
-          points.map(p => remainingPoints.get(p).isDefined).reduce(_ && _)
+          points.map(p => remainingPoints.contains(p)).reduce(_ && _)
         )
       }
       .filter(_._2)
@@ -122,7 +119,7 @@ object LineMeshConverter {
     val points = remainingPointDoublets.flatten.distinct
     val pt2Id = points.zipWithIndex.toMap
     val cells = remainingPointDoublets.map {
-      case vec => LineCell(PointId(pt2Id(vec(0))), PointId(pt2Id(vec(1))))
+      vec => LineCell(PointId(pt2Id(vec(0))), PointId(pt2Id(vec(1))))
     }
 
     LineMesh2D(
@@ -134,11 +131,10 @@ object LineMeshConverter {
 }
 
 case class LineMeshOperator(mesh: LineMesh2D) {
-  val centerPoint: Point2D = Point2D(x = c.x, y = c.y)
   private val c = mesh.pointSet.points
     .map(_.toVector)
     .reduce(_ + _) * 1.0 / mesh.pointSet.numberOfPoints.toDouble
-
+  val centerPoint: Point2D = Point2D(x = c.x, y = c.y)
   def verifyNormalDirection(point: Point2D,
                             normal: EuclideanVector2D): Boolean = {
     val v: EuclideanVector2D = (point - centerPoint)
