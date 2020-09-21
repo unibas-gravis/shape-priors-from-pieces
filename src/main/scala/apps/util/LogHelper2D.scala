@@ -18,9 +18,9 @@ package apps.util
 
 import java.io.File
 
-import api.sampling.ModelFittingParameters
-import api.sampling.loggers.{JSONAcceptRejectLogger, jsonLogFormat}
-import apps.scalismoExtension.LineMeshConverter
+import api.sampling2D.ModelFittingParameters
+import api.sampling2D.loggers.{JSONAcceptRejectLogger, jsonLogFormat}
+import apps.scalismoExtension.FormatConverter
 import scalismo.common.UnstructuredPoints.Create.CreateUnstructuredPoints2D
 import scalismo.geometry.{EuclideanVector, _2D, _3D}
 import scalismo.mesh.{LineMesh, LineMesh3D}
@@ -53,11 +53,11 @@ case class LogHelper2D(file: File, model: PointDistributionModel[_2D, LineMesh],
 
   def sampleMeshes3D(takeEveryN: Int = 50, total: Int = 1000000, randomize: Boolean = false): IndexedSeq[LineMesh[_3D]] = {
     val meshes = sampleMeshes2D(takeEveryN, total, randomize)
-    meshes.map(m => LineMeshConverter.lineMesh2Dto3D(m))
+    meshes.map(m => FormatConverter.lineMesh2Dto3D(m))
   }
 
   def mapMesh3D(): LineMesh3D = {
-    LineMeshConverter.lineMesh2Dto3D(mapMesh2D())
+    FormatConverter.lineMesh2Dto3D(mapMesh2D())
   }
 
   def mapMesh2D(): LineMesh[_2D] = {
@@ -95,7 +95,7 @@ case class LogHelper2D(file: File, model: PointDistributionModel[_2D, LineMesh],
   }
 
   def meanMesh3D(takeEveryN: Int = 1): LineMesh3D = {
-    LineMeshConverter.lineMesh2Dto3D(meanMesh2D(takeEveryN))
+    FormatConverter.lineMesh2Dto3D(meanMesh2D(takeEveryN))
   }
 
   @scala.annotation.tailrec

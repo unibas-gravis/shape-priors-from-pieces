@@ -14,11 +14,15 @@
  *  limitations under the License.
  */
 
-package apps.util
+package api.other2D
 
-import java.io.File
+trait IcpProjectionDirection
 
-object myPaths {
-  val handsPath: File = new File("data/hands")
-  val handsLogPath: File = new File(handsPath, "logs")
-}
+case object DoubleProjection extends IcpProjectionDirection
+
+case object ModelSampling extends IcpProjectionDirection
+
+case object TargetSampling extends IcpProjectionDirection
+
+case object ModelAndTargetSampling extends IcpProjectionDirection
+

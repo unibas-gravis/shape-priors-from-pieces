@@ -1,6 +1,6 @@
 package scalismo.statisticalmodel.dataset
 
-import api.other.LineMeshMetrics2D
+import api.other2D.LineMeshMetrics2D
 import scalismo.common.DomainWarp
 import scalismo.geometry.{EuclideanVector, _2D}
 import scalismo.mesh.LineMesh

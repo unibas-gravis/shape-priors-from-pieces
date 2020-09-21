@@ -14,11 +14,13 @@
  *  limitations under the License.
  */
 
-package apps.util
+package api.sampling2D.evaluators
 
-import java.io.File
+trait EvaluationMode
 
-object myPaths {
-  val handsPath: File = new File("data/hands")
-  val handsLogPath: File = new File(handsPath, "logs")
-}
+case object ModelToTargetEvaluation extends EvaluationMode
+
+case object TargetToModelEvaluation extends EvaluationMode
+
+case object SymmetricEvaluation extends EvaluationMode
+

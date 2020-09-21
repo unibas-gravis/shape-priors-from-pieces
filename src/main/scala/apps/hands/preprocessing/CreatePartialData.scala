@@ -2,52 +2,99 @@ package apps.hands.preprocessing
 
 import java.io.File
 
-import apps.hands.preprocessing.CreateHandReference.{getLmPoint, getPointsAroundLM}
-import apps.scalismoExtension.LineMeshConverter
 import apps.util.myPaths
-import scalismo.common.{DiscreteField, UnstructuredPointsDomain}
+import scalismo.common.PointId
+import scalismo.common.UnstructuredPoints.Create.CreateUnstructuredPoints2D
 import scalismo.geometry._
 import scalismo.io.{LandmarkIO, MeshIO}
-import scalismo.mesh.{LineCell, LineList, LineMesh2D}
-import scalismo.ui.api.ScalismoUIHeadless
+import scalismo.mesh.{LineCell, LineList, LineMesh, LineMesh2D}
+
+import scala.annotation.tailrec
 
 object CreatePartialData {
+
+  @tailrec
+  def walkPoints(mesh: LineMesh2D, currentIds: IndexedSeq[PointId], numOfPoints: Int): IndexedSeq[PointId] = {
+    val nearby = currentIds.flatMap(id => mesh.topology.adjacentPointsForPoint(id))
+    val all = nearby.toSet.union(currentIds.toSet).toIndexedSeq
+    if (all.length >= numOfPoints) all
+    else walkPoints(mesh, all, numOfPoints)
+  }
+
+
+  def getPointsAroundLM(mesh: LineMesh2D, middlePoint: Point2D, numOfPoints: Int): IndexedSeq[Point[_2D]] = {
+    val points = IndexedSeq(mesh.pointSet.findClosestPoint(middlePoint).id)
+    walkPoints(mesh, points, numOfPoints).map(id => mesh.pointSet.point(id))
+  }
+
+  def getLmPoint[A](lmSeq: Seq[Landmark[A]], name: String): Point[A] = {
+    lmSeq.find(_.id == name).get.point
+  }
+
+  def createPartialMesh(mesh: LineMesh2D, pId: PointId, area: Int): LineMesh[_2D] = {
+    val p = mesh.pointSet.point(pId)
+    val removeList: Seq[Point[_2D]] = mesh.pointSet.findNClosestPoints(p, area).map(_.point)
+    createPartialMesh(mesh, removeList)
+  }
+
+  def createPartialMesh(mesh: LineMesh2D, removeList: Seq[Point[_2D]]): LineMesh[_2D] = {
+    val meshPoints = mesh.pointSet.points.toIndexedSeq
+
+    val remainingPoints = meshPoints.par.filter { p => !removeList.contains(p) }.zipWithIndex.toMap
+
+    val remainingPointDoublets = mesh.cells.par.map { cell =>
+      val points = cell.pointIds.map(pointId => meshPoints(pointId.id))
+      (points, points.map(p => remainingPoints.contains(p)).reduce(_ && _))
+    }.filter(_._2).map(_._1)
+
+    val points = remainingPointDoublets.flatten.distinct
+    val pt2Id = points.zipWithIndex.toMap
+    val cells = remainingPointDoublets.map {
+      vec => LineCell(PointId(pt2Id(vec(0))), PointId(pt2Id(vec(1))))
+    }
+
+    LineMesh2D(
+      CreateUnstructuredPoints2D.create(points.toIndexedSeq),
+      LineList(cells.toIndexedSeq)
+    )
+  }
+
 
   def main(args: Array[String]) {
     scalismo.initialize()
 
-    val alignedFiles = new File(myPaths.datapath, "aligned/mesh").listFiles(_.getName.endsWith(".vtk"))
-    val alignedLMFiles = new File(myPaths.datapath, "aligned/landmarks").listFiles(_.getName.endsWith(".json"))
+    val alignedFiles = new File(myPaths.handsPath, "aligned/mesh").listFiles(_.getName.endsWith(".vtk")).sorted
+    val alignedLMFiles = new File(myPaths.handsPath, "aligned/landmarks").listFiles(_.getName.endsWith(".json"))
 
-    val targetNameSeq = Seq("test-0-normal", "test-1-normal", "test-11-normal") //, "test-0-smaller", "test-0-smallest", "test-0-bigger", "test-0-biggest")
-    //    val targetNameSeq = Seq("test-11", "test-11-smaller", "test-11-smallest", "test-11-bigger", "test-11-biggest")
-    //    val targetNameSeq = Seq("hand-0", "hand-1", "hand-2", "hand-3", "hand-5", "hand-6", "hand-7", "hand-8", "hand-10", "hand-11", "hand-12", "hand-16", "mean", "mean-bigger", "xray")
-    targetNameSeq.foreach { targetname =>
-      //    val targetname = "hand-0"
-
-      val targetFile = alignedFiles.find(f => f.getName == targetname + ".vtk").get
+    alignedFiles.foreach { targetFile =>
+      val targetname = targetFile.getName.replace(".vtk", "")
       val targetLMFile = alignedLMFiles.find(f => f.getName == targetname + ".json").get
 
       println(targetFile)
       println(targetLMFile)
 
       val targetFull = MeshIO.readLineMesh2D(targetFile).get
-      val targetLM3D = LandmarkIO.readLandmarksJson[_3D](targetLMFile).get
-      val targetLM2D = targetLM3D.map(lm => Landmark[_2D](lm.id, Point2D(lm.point.x, lm.point.y), lm.description, lm.uncertainty))
+      val targetLM = LandmarkIO.readLandmarksJson[_2D](targetLMFile).get
 
       val fingerSeq = Seq("thumb", "index", "long", "ring", "small")
       fingerSeq.foreach { finger =>
 
         val middlePointId = s"finger.${finger}.tip"
-        val middlePoint = getLmPoint[_2D](targetLM2D, middlePointId)
-
+        val middlePoint = getLmPoint[_2D](targetLM, middlePointId)
 
         val percentageCutSeq = Seq(5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90)
         percentageCutSeq.foreach { percentageCut =>
 
+          val outputPathLM = new File(myPaths.handsPath, s"partial/landmarks")
+          outputPathLM.mkdirs()
+          val outputPathMesh = new File(myPaths.handsPath, s"partial/mesh")
+          outputPathMesh.mkdirs()
+          val outputFileLM = new File(outputPathLM, s"${targetname}_${finger}_${percentageCut}.json")
+          val outputFileMesh = new File(outputPathMesh, s"${targetname}_${finger}_${percentageCut}.vtk")
+
           val numberOfPointsToCut: Int = targetFull.pointSet.numberOfPoints * percentageCut / 100
           val points = getPointsAroundLM(targetFull, middlePoint, numberOfPointsToCut)
-          val refCut2Dopen = LineMeshConverter.createPartialMesh(targetFull, points)
+          val refCut2Dopen = createPartialMesh(targetFull, points)
 
           val m2Dboundary = refCut2Dopen.pointSet.pointIds.toIndexedSeq.filter(id => refCut2Dopen.topology.adjacentPointsForPoint(id).length < 2)
           val closedLineList2 = LineList(refCut2Dopen.topology.lines ++ IndexedSeq(LineCell(m2Dboundary.last, m2Dboundary.head)))
@@ -55,35 +102,12 @@ object CreatePartialData {
 
           println(s"Number of boundary landmarks ${m2Dboundary.length}")
 
-          val ref3D = LineMeshConverter.lineMesh2Dto3D(refCut2D)
-          val points3D = points.map(p => Point3D(p.x, p.y, 0.0))
+          MeshIO.writeLineMesh(refCut2D, outputFileMesh)
 
-          val normalVectorsModel: IndexedSeq[EuclideanVector[_3D]] =
-            refCut2D.pointSet.pointIds.toIndexedSeq.map { id =>
-              val n = refCut2D.vertexNormals(id)
-              EuclideanVector.apply(x = n.x, y = n.y, z = 0) * 10
-            }
-          val normalVectorsModelFields =
-            DiscreteField[_3D, UnstructuredPointsDomain, EuclideanVector[_3D]]( // DiscreteField[_3D, UnstructuredPointsDomain, EuclideanVector[_3D]]
-              UnstructuredPointsDomain.Create.CreateUnstructuredPointsDomain3D.create(ref3D.pointSet.points.toIndexedSeq),
-              normalVectorsModel
-            )
+          val filteredTargetLMs = targetLM.filter(lm => (refCut2D.pointSet.findClosestPoint(lm.point).point - lm.point).norm < 2.0)
 
-          //          val ui = ScalismoUI(s"${targetname}_${finger}_${percentageCut}")
-          val ui = ScalismoUIHeadless()
-          ui.show(ref3D, "cut")
-          ui.show(normalVectorsModelFields, "normals")
-
-          MeshIO.writeLineMesh(refCut2D, new File(myPaths.datapath, s"partial/mesh/${targetname}_${finger}_${percentageCut}.vtk"))
-
-          val filteredTargetLMs = targetLM3D.filter {
-            f =>
-              val p2D = Point2D(f.point.x, f.point.y)
-              (refCut2D.pointSet.findClosestPoint(p2D).point - p2D).norm < 2.0
-          }
-          LandmarkIO.writeLandmarksJson[_3D](filteredTargetLMs, new File(myPaths.datapath, s"partial/landmarks/${targetname}_${finger}_${percentageCut}.json"))
-          println(s"Number of retained landmarks ${filteredTargetLMs.length}/${targetLM3D.length}")
-          filteredTargetLMs.foreach(f => println(f.id))
+          LandmarkIO.writeLandmarksJson[_2D](filteredTargetLMs, outputFileLM)
+          println(s"Number of retained landmarks ${filteredTargetLMs.length}/${targetLM.length}")
         }
       }
     }

@@ -25,3 +25,6 @@ target/
 .scala_dependencies
 .worksheet
 data/femur/SMIR/*
+data/hands/partial/*
+data/hands/log/*
+data/hands/experiments/*
