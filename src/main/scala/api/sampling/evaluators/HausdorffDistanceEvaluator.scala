@@ -14,25 +14,23 @@
  *  limitations under the License.
  */
 
-package api.sampling2D.evaluators
+package api.sampling.evaluators
 
-import api.sampling2D.ModelFittingParameters
-import apps.scalismoExtension.LineMeshMetrics2D
+import api.sampling.ModelFittingParameters
 import breeze.stats.distributions.ContinuousDistr
-import scalismo.geometry._2D
-import scalismo.mesh.{LineMesh, LineMesh2D}
+import scalismo.mesh.{MeshMetrics, TriangleMesh3D}
 import scalismo.sampling.DistributionEvaluator
-import scalismo.statisticalmodel.PointDistributionModel
+import scalismo.statisticalmodel.StatisticalMeshModel
 
-case class HausdorffDistanceEvaluator(model: PointDistributionModel[_2D, LineMesh],
-                                      targetMesh: LineMesh2D,
+case class HausdorffDistanceEvaluator(model: StatisticalMeshModel,
+                                      targetMesh: TriangleMesh3D,
                                       likelihoodModel: ContinuousDistr[Double]
                                      )
   extends DistributionEvaluator[ModelFittingParameters] with EvaluationCaching {
 
   def computeLogValue(sample: ModelFittingParameters): Double = {
-    val currentSample = model.instance(sample.shapeParameters.parameters) //ModelFittingParameters.transformedMesh(model, sample)
-    val hd = LineMeshMetrics2D.hausdorffDistance(currentSample, targetMesh)
+    val currentSample = ModelFittingParameters.transformedMesh(model, sample)
+    val hd = MeshMetrics.hausdorffDistance(currentSample, targetMesh)
     likelihoodModel.logPdf(hd)
   }
 }

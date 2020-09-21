@@ -28,3 +28,5 @@ data/femur/SMIR/*
 data/hands/partial/*
 data/hands/log/*
 data/hands/experiments/*
+data/hands/aligned/landmarks3D/*
+data/hands/registered/landmarks3D/*

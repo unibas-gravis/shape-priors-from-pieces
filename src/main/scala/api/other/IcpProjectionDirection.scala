@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package api.other2D
+package api.other
 
 trait IcpProjectionDirection
 

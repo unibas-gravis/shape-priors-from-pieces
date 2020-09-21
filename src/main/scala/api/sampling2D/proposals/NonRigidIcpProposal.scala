@@ -16,7 +16,7 @@
 
 package api.sampling2D.proposals
 
-import api.other2D.{DoubleProjection, IcpProjectionDirection, ModelSampling, TargetSampling}
+import api.other.{DoubleProjection, IcpProjectionDirection, ModelSampling, TargetSampling}
 import api.sampling2D.{ModelFittingParameters, ShapeParameters, SurfaceNoiseHelpers}
 import breeze.linalg.{DenseVector, diag}
 import scalismo.common.interpolation.NearestNeighborInterpolator

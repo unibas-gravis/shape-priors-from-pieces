@@ -3,7 +3,7 @@ package apps.hands
 import java.awt.Color
 import java.io.File
 
-import api.other2D.{RegistrationComparison, TargetSampling}
+import api.other.{RegistrationComparison, TargetSampling}
 import api.sampling2D.evaluators.TargetToModelEvaluation
 import api.sampling2D.{MixedProposalDistributions, ModelFittingParameters, ProductEvaluators, SamplingRegistration}
 import apps.scalismoExtension.FormatConverter
@@ -97,7 +97,7 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
     val bestMesh = model.instance(best.shapeParameters.parameters)
 
     Visualization2DHelper.show2DLineMesh(ui, finalGroup, bestMesh, "best-fit")
-    RegistrationComparison.evaluateReconstruction("SAMPLE", targetMesh, bestMesh)
+    RegistrationComparison.evaluateReconstruction2GroundTruth("SAMPLE", targetMesh, bestMesh)
 
   }
 
