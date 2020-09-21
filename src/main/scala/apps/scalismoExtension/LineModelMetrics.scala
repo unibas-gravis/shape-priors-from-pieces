@@ -1,10 +1,26 @@
-package scalismo.statisticalmodel.dataset
+/*
+ *  Copyright University of Basel, Graphics and Vision Research Group
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 
-import apps.scalismoExtension.LineMeshMetrics2D
+package apps.scalismoExtension
+
 import scalismo.common.DomainWarp
 import scalismo.geometry.{EuclideanVector, _2D}
 import scalismo.mesh.LineMesh
 import scalismo.statisticalmodel.PointDistributionModel
+import scalismo.statisticalmodel.dataset.DataCollection
 import scalismo.utils.Random
 
 import scala.collection.parallel.immutable.ParVector
@@ -40,15 +56,10 @@ object LineModelMetrics {
     implicit rng: Random
   ): Double = {
 
-    ParVector
-      .range(0, nbSamples)
-      .map { _ =>
-        val sample = pcaModel.sample
-        data.map { m =>
-          LineMeshMetrics2D.avgDistance(m, sample)
-        }.min
-      }
-      .sum * (1.0 / nbSamples)
+    ParVector.range(0, nbSamples).map { _ =>
+      val sample = pcaModel.sample
+      data.map { m => LineMeshMetrics2D.avgDistance(m, sample)}.min
+    }.sum * (1.0 / nbSamples)
   }
 
   /**

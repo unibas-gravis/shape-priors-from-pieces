@@ -69,7 +69,7 @@ case class IndependentPointDistanceEvaluator(model: PointDistributionModel[_2D, 
 
   def computeLogValue(sample: ModelFittingParameters): Double = {
 
-    val currentSample = model.instance(sample.shapeParameters.parameters) //ModelFittingParameters.transformedMesh(model, sample)
+    val currentSample = ModelFittingParameters.transformedMesh(model, sample)
     val dist = evaluationMode match {
       case ModelToTargetEvaluation => distModelToTarget(currentSample)
       case TargetToModelEvaluation => distTargetToModel(currentSample)

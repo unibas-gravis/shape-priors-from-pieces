@@ -37,11 +37,10 @@ import scalismo.utils.Random
 class SamplingRegistration(model: PointDistributionModel[_2D, LineMesh], sample: LineMesh2D, modelUi: Option[SimpleAPI] = None, modelUiUpdateInterval: Int = 1000, acceptInfoPrintInterval: Int = 10000) {
   implicit val random: Random = Random(1024)
 
-  val rotatCenter2D: EuclideanVector[_2D] = model.reference.pointSet.points.map(_.toVector).reduce(_ + _) * 1.0 / model.reference.pointSet.numberOfPoints.toDouble
-  val rotatCenter3D: EuclideanVector[_3D] = EuclideanVector3D(rotatCenter2D.x, rotatCenter2D.y, 0.0)
-  val initPoseParameters = PoseParameters(EuclideanVector3D(0, 0, 0), (0, 0, 0), rotationCenter = rotatCenter3D.toPoint)
-  val initShapeParameters = ShapeParameters(DenseVector.zeros[Double](model.rank))
-  val initialParametersZero = ModelFittingParameters(initPoseParameters, initShapeParameters)
+  private val rotatCenter2D: EuclideanVector[_2D] = model.reference.pointSet.points.map(_.toVector).reduce(_ + _) * 1.0 / model.reference.pointSet.numberOfPoints.toDouble
+  private val initPoseParameters = PoseParameters(EuclideanVector2D(0, 0), 0, rotationCenter = rotatCenter2D.toPoint)
+  private val initShapeParameters = ShapeParameters(DenseVector.zeros[Double](model.rank))
+  private val initialParametersZero = ModelFittingParameters(initPoseParameters, initShapeParameters)
 
   def runfitting(evaluators: Map[String, DistributionEvaluator[ModelFittingParameters]], generator: MixtureProposal.ProposalGeneratorWithTransition[ModelFittingParameters], numOfSamples: Int, initialModelParameters: Option[ModelFittingParameters] = None, jsonName: File = new File("tmp.json")): ModelFittingParameters = {
     val logger: Logger = Logger(s"MCMC-${jsonName.getName}")
@@ -75,22 +74,17 @@ class SamplingRegistration(model: PointDistributionModel[_2D, LineMesh], sample:
         else {
           theta
         }
-        val currentSample = FormatConverter.lineMesh2Dto3D(model.instance(thetaToUse.shapeParameters.parameters))
+        val currentSample = FormatConverter.lineMesh2Dto3D(ModelFittingParameters.transformedMesh(model, thetaToUse))
         if (modelUi.isDefined) {
           modelUi.get.show(sampleGroup.get, currentSample, s"${i.toString}")
-
-          //          val rigidTrans = ModelFittingParameters.poseTransform(thetaToUse)
-          //          modelUi.get.shapeModelTransformationView.poseTransformationView.transformation = rigidTrans
-          //          modelUi.get.shapeModelTransformationView.shapeTransformationView.coefficients = thetaToUse.shapeParameters.parameters
         }
       }
       if (i % acceptInfoPrintInterval == 0 && i != 0) {
         acceptRejectLogger.writeLog()
         acceptRejectLogger.printAcceptInfo(jsonName.getName)
         val bestTheta = bestSamplelogger.currentBestSample().get
-        //        val rigidTrans = ModelFittingParameters.poseTransform(bestTheta)
-        val bestStuff: LineMesh[_2D] = model.instance(bestTheta.shapeParameters.parameters) //.transform(rigidTrans)
-        LineMeshMetrics2D.evaluateReconstruction2GroundTruthBoundaryAware("Sampling", bestStuff, sample)
+        val bestStuff: LineMesh[_2D] = ModelFittingParameters.transformedMesh(model, bestTheta)
+        LineMeshMetrics2D.evaluateReconstruction2GroundTruthBoundaryAware("Sampling", sample, bestStuff)
       }
       theta
     }

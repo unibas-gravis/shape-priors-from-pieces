@@ -1,3 +1,19 @@
+/*
+ *  Copyright University of Basel, Graphics and Vision Research Group
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package apps.hands
 
 import java.awt.Color
@@ -93,8 +109,7 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
 
     val t1 = System.currentTimeMillis()
     println(s"ICP-Timing: ${(t1 - t0) / 1000.0} sec")
-    //    ModelFittingParameters.transformedMesh(model, best)
-    val bestMesh = model.instance(best.shapeParameters.parameters)
+    val bestMesh = ModelFittingParameters.transformedMesh(model, best)
 
     Visualization2DHelper.show2DLineMesh(ui, finalGroup, bestMesh, "best-fit")
     RegistrationComparison.evaluateReconstruction2GroundTruth("SAMPLE", targetMesh, bestMesh)

@@ -19,7 +19,7 @@ package api.sampling2D
 import api.other.{DoubleProjection, IcpProjectionDirection, ModelAndTargetSampling, ModelSampling, TargetSampling}
 import api.sampling2D.proposals._
 import scalismo.geometry.{Landmark, _2D}
-import scalismo.mesh.{LineMesh, LineMesh2D, TriangleMesh3D}
+import scalismo.mesh.{LineMesh, LineMesh2D}
 import scalismo.sampling.proposals.MixtureProposal
 import scalismo.sampling.proposals.MixtureProposal.ProposalGeneratorWithTransition
 import scalismo.sampling.proposals.MixtureProposal.implicits._
@@ -27,15 +27,8 @@ import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.utils.Random.implicits._
 
 object MixedProposalDistributions {
-  TriangleMesh3D
-
-  def mixedProposalRandom(
-                           model: PointDistributionModel[_2D, LineMesh]
-                         ): ProposalGeneratorWithTransition[ModelFittingParameters] = {
-    val mixproposal = MixtureProposal(
-      1.0 *: RandomShapeUpdateProposal(model, 0.01, generatedBy = "RandomShape-0.01")
-    )
-    mixproposal
+  def mixedProposalRandom(model: PointDistributionModel[_2D, LineMesh]): ProposalGeneratorWithTransition[ModelFittingParameters] = {
+    MixtureProposal(1.0 *: RandomShapeUpdateProposal(model, 0.01, generatedBy = "RandomShape-0.01"))
   }
 
   def mixedProposalICP(

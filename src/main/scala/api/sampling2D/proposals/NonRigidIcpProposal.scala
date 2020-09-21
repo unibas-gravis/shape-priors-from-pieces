@@ -172,7 +172,7 @@ case class NonRigidIcpProposal(
      * @return List of points, with associated deformation and normal dependant surface noise.
      */
     def uncertainDisplacementEstimation(theta: ModelFittingParameters): IndexedSeq[(Point[_2D], EuclideanVector[_2D], MultivariateNormalDistribution)] = {
-      val currentMesh = model.instance(theta.shapeParameters.parameters) //ModelFittingParameters.transformedMesh(model, theta)
+      val currentMesh = ModelFittingParameters.transformedMesh(model, theta)
       if (projectionDirection == DoubleProjection) {
         modelBasedDoubleProjectionClosestPointsEstimation(currentMesh)
       }

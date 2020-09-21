@@ -24,8 +24,7 @@ import scalismo.sampling.DistributionEvaluator
 import scalismo.statisticalmodel.{MultivariateNormalDistribution, PointDistributionModel}
 
 case class ModelPriorEvaluator(model: PointDistributionModel[_2D, LineMesh]) extends DistributionEvaluator[ModelFittingParameters] {
-  val mvnormal = MultivariateNormalDistribution(DenseVector.zeros[Double](model.rank), diag(DenseVector.ones[Double](model.rank)))
-
+  private val mvnormal = MultivariateNormalDistribution(DenseVector.zeros[Double](model.rank), diag(DenseVector.ones[Double](model.rank)))
 
   override def logValue(theta: ModelFittingParameters): Double = {
     mvnormal.logpdf(theta.shapeParameters.parameters)

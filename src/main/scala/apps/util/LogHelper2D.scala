@@ -20,10 +20,9 @@ import java.io.File
 
 import api.sampling2D.ModelFittingParameters
 import api.sampling2D.loggers.{JSONAcceptRejectLogger, jsonLogFormat}
-import apps.scalismoExtension.FormatConverter
 import scalismo.common.UnstructuredPoints.Create.CreateUnstructuredPoints2D
-import scalismo.geometry.{EuclideanVector, _2D, _3D}
-import scalismo.mesh.{LineMesh, LineMesh3D}
+import scalismo.geometry.{EuclideanVector, _2D}
+import scalismo.mesh.LineMesh
 import scalismo.statisticalmodel.PointDistributionModel
 
 case class LogHelper2D(file: File, model: PointDistributionModel[_2D, LineMesh], burnInPhase: Int = 200) {
@@ -51,17 +50,8 @@ case class LogHelper2D(file: File, model: PointDistributionModel[_2D, LineMesh],
     filteredLogs.map { l => logToMesh(l._1) }
   }
 
-  def sampleMeshes3D(takeEveryN: Int = 50, total: Int = 1000000, randomize: Boolean = false): IndexedSeq[LineMesh[_3D]] = {
-    val meshes = sampleMeshes2D(takeEveryN, total, randomize)
-    meshes.map(m => FormatConverter.lineMesh2Dto3D(m))
-  }
-
-  def mapMesh3D(): LineMesh3D = {
-    FormatConverter.lineMesh2Dto3D(mapMesh2D())
-  }
-
   def mapMesh2D(): LineMesh[_2D] = {
-    val map = model.instance(logObj.getBestFittingParsFromJSON.shapeParameters.parameters)
+    val map = ModelFittingParameters.transformedMesh(model, logObj.getBestFittingParsFromJSON)
     map
   }
 
@@ -81,21 +71,9 @@ case class LogHelper2D(file: File, model: PointDistributionModel[_2D, LineMesh],
       })
       meanDeformationForId
     })
-    println("mean computed")
-    //    val meanDeformationField = DiscreteField[_2D, UnstructuredPointsDomain[_2D], EuclideanVector[_2D]](
-    //      reference.pointSet,
-    //      meanDeformations.toIndexedSeq
-    //    )
-    //    val continuousMeanDeformationField = meanDeformationField.interpolate(NearestNeighborInterpolator2D())
-    //    val meanTransformation = Transformation((pt : Point[_2D]) => pt + continuousMeanDeformationField(pt))
     val meanPoints = (reference.pointSet.points.toIndexedSeq zip meanDeformations.toIndexedSeq).map { case (p, v) => (p + v) }
     val meanMesh = LineMesh[_2D](CreateUnstructuredPoints2D.create(meanPoints), reference.topology)
-    println("finish")
     meanMesh
-  }
-
-  def meanMesh3D(takeEveryN: Int = 1): LineMesh3D = {
-    FormatConverter.lineMesh2Dto3D(meanMesh2D(takeEveryN))
   }
 
   @scala.annotation.tailrec
@@ -105,6 +83,6 @@ case class LogHelper2D(file: File, model: PointDistributionModel[_2D, LineMesh],
   }
 
   private def logToMesh(l: jsonLogFormat): LineMesh[_2D] = {
-    model.instance(JSONAcceptRejectLogger.sampleToModelParameters(l).shapeParameters.parameters)
+    ModelFittingParameters.transformedMesh(model, JSONAcceptRejectLogger.sampleToModelParameters(l))
   }
 }

@@ -19,26 +19,26 @@ package api.sampling2D
 import breeze.linalg.DenseVector
 import scalismo.common.PointId
 import scalismo.common.interpolation.NearestNeighborInterpolator
-import scalismo.geometry.{EuclideanVector, Point, _3D}
-import scalismo.mesh.TriangleMesh
-import scalismo.statisticalmodel.StatisticalMeshModel
+import scalismo.geometry.{EuclideanVector, Point, _2D}
+import scalismo.mesh.LineMesh
+import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.transformations._
 
 case class ScaleParameter(s: Double) {
   def parameters: DenseVector[Double] = DenseVector(s)
 }
 
-case class PoseParameters(translation: EuclideanVector[_3D], rotation: (Double, Double, Double), rotationCenter: Point[_3D]) {
+case class PoseParameters(translation: EuclideanVector[_2D], rotation: Double, rotationCenter: Point[_2D]) {
   def parameters: DenseVector[Double] = {
-    DenseVector.vertcat(translation.toBreezeVector, DenseVector[Double](rotation._1, rotation._2, rotation._3)
-      , DenseVector[Double](rotationCenter.x, rotationCenter.y, rotationCenter.z))
+    DenseVector.vertcat(translation.toBreezeVector, DenseVector[Double](rotation)
+      , DenseVector[Double](rotationCenter.x, rotationCenter.y))
   }
 }
 
 object PoseParameters {
-  def createFromRigidTransform(r: TranslationAfterRotation[_3D]): PoseParameters = {
+  def createFromRigidTransform(r: TranslationAfterRotation[_2D]): PoseParameters = {
     val rotParams = r.rotation.parameters
-    PoseParameters(r.translation.t, (rotParams(0), rotParams(1), rotParams(2)), r.rotation.center)
+    PoseParameters(r.translation.t, rotParams(0), r.rotation.center)
   }
 }
 
@@ -47,7 +47,7 @@ case class ShapeParameters(parameters: DenseVector[Double])
 case class ModelFittingParameters(scalaParameter: ScaleParameter, poseParameters: PoseParameters, shapeParameters: ShapeParameters, generatedBy: String = "Anonymous") {
 
 
-  val allParameters = DenseVector.vertcat(scalaParameter.parameters, poseParameters.parameters, shapeParameters.parameters)
+  private val allParameters = DenseVector.vertcat(scalaParameter.parameters, poseParameters.parameters, shapeParameters.parameters)
 
   override def equals(that: Any): Boolean = {
     that match {
@@ -74,46 +74,46 @@ object ModelFittingParameters {
     ModelFittingParameters(ScaleParameter(1.0), poseParameters, shapeParameters)
   }
 
-  def poseAndShapeTransform(model: StatisticalMeshModel, parameters: ModelFittingParameters): Transformation[_3D] = {
+  def poseAndShapeTransform(model: PointDistributionModel[_2D, LineMesh], parameters: ModelFittingParameters): Transformation[_2D] = {
     Transformation(poseTransform(parameters).compose(shapeTransform(model, parameters)))
   }
 
-  def poseTransform(parameter: ModelFittingParameters): TranslationAfterRotation[_3D] = {
+  def poseTransform(parameter: ModelFittingParameters): TranslationAfterRotation[_2D] = {
     val poseParameters = parameter.poseParameters
-    val translation = Translation[_3D](poseParameters.translation)
-    val (phi, theta, psi) = poseParameters.rotation
+    val translation = Translation[_2D](poseParameters.translation)
+    val (phi) = poseParameters.rotation
     val center = poseParameters.rotationCenter
-    val rotation = Rotation(phi, theta, psi, center)
-    TranslationAfterRotation[_3D](translation, rotation)
+    val rotation = Rotation(phi, center)
+    TranslationAfterRotation[_2D](translation, rotation)
   }
 
-  def shapeTransform(model: StatisticalMeshModel, parameters: ModelFittingParameters): Transformation[_3D] = {
+  def shapeTransform(model: PointDistributionModel[_2D, LineMesh], parameters: ModelFittingParameters): Transformation[_2D] = {
     val coeffs = parameters.shapeParameters.parameters
     val gpModel = model.gp.interpolate(NearestNeighborInterpolator())
     val instance = gpModel.instance(coeffs)
-    Transformation((pt: Point[_3D]) => pt + instance(pt))
+    Transformation((pt: Point[_2D]) => pt + instance(pt))
   }
 
-  def transformedMesh(model: StatisticalMeshModel, parameters: ModelFittingParameters): TriangleMesh[_3D] = {
-    model.referenceMesh.transform(fullTransform(model, parameters))
+  def transformedMesh(model: PointDistributionModel[_2D, LineMesh], parameters: ModelFittingParameters): LineMesh[_2D] = {
+    model.reference.transform(fullTransform(model, parameters))
   }
 
-  def fullTransform(model: StatisticalMeshModel, parameters: ModelFittingParameters): Transformation[_3D] = {
+  def fullTransform(model: PointDistributionModel[_2D, LineMesh], parameters: ModelFittingParameters): Transformation[_2D] = {
     Transformation(scaleTransform(parameters).compose(poseTransform(parameters).compose(shapeTransform(model, parameters))))
   }
 
-  def scaleTransform(parameters: ModelFittingParameters): Scaling[_3D] = {
+  def scaleTransform(parameters: ModelFittingParameters): Scaling[_2D] = {
     Scaling(parameters.scalaParameter.s)
   }
 
-  def transformedPoints(model: StatisticalMeshModel, parameters: ModelFittingParameters, points: Seq[Point[_3D]]): Seq[Point[_3D]] = {
+  def transformedPoints(model: PointDistributionModel[_2D, LineMesh], parameters: ModelFittingParameters, points: Seq[Point[_2D]]): Seq[Point[_2D]] = {
     val t = fullTransform(model, parameters)
     points.map(t)
   }
 
-  def transformedPointsWithIds(model: StatisticalMeshModel, parameters: ModelFittingParameters, pointIds: Seq[PointId]): Seq[Point[_3D]] = {
+  def transformedPointsWithIds(model: PointDistributionModel[_2D, LineMesh], parameters: ModelFittingParameters, pointIds: Seq[PointId]): Seq[Point[_2D]] = {
     val t = fullTransform(model, parameters)
-    val ps = model.referenceMesh.pointSet
+    val ps = model.reference.pointSet
     pointIds.map(id => t(ps.point(id)))
   }
 

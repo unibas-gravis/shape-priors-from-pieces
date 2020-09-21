@@ -40,19 +40,15 @@ case class RandomShapeUpdateProposal(
   )
   private val independentDistr = breeze.stats.distributions.Gaussian(0, stdev)
 
-  override def propose(
-                        theta: ModelFittingParameters
-                      ): ModelFittingParameters = {
+  override def propose(theta: ModelFittingParameters): ModelFittingParameters = {
     val currentCoeffs = theta.shapeParameters.parameters
     theta.copy(
-      shapeParameters = theta.shapeParameters
-        .copy(parameters = currentCoeffs + perturbationDistr.sample),
+      shapeParameters = theta.shapeParameters.copy(parameters = currentCoeffs + perturbationDistr.sample),
       generatedBy = generatedBy
     )
   }
 
-  override def logTransitionProbability(from: ModelFittingParameters,
-                                        to: ModelFittingParameters): Double = {
+  override def logTransitionProbability(from: ModelFittingParameters, to: ModelFittingParameters): Double = {
     val residual = to.shapeParameters.parameters - from.shapeParameters.parameters
     perturbationDistr.logpdf(residual)
   }

@@ -131,9 +131,9 @@ case class JSONAcceptRejectLogger[A](filePath: File, evaluators: Option[Map[Stri
 
   def sampleToModelParameters(sample: jsonLogFormat): ModelFittingParameters = {
     val r = sample.rigid.toIndexedSeq
-    val translation: EuclideanVector[_3D] = EuclideanVector3D(r(0), r(1), r(2))
-    val rotation: (Double, Double, Double) = (r(3), r(4), r(5))
-    val center: Point[_3D] = Point3D(r(6), r(7), r(8))
+    val translation: EuclideanVector[_2D] = EuclideanVector2D(r(0), r(1))
+    val rotation: Double = r(2)
+    val center: Point[_2D] = Point2D(r(3), r(4))
 
     ModelFittingParameters(poseParameters = PoseParameters(translation, rotation, center), shapeParameters = ShapeParameters(DenseVector[Double](sample.coeff.toArray)))
   }
