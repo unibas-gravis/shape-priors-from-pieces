@@ -18,12 +18,15 @@ package apps.hands
 
 import java.io._
 
+import apps.scalismoExtension.LineModelMetrics
 import apps.util.myPaths
 import scalismo.geometry._2D
 import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.mesh.LineMesh
 import scalismo.statisticalmodel.PointDistributionModel
+import scalismo.statisticalmodel.dataset.DataCollection
 import scalismo.statisticalmodel.dataset.DataCollection.LineMeshDataCollection
+import scalismo.utils.Random.implicits.randomGenerator
 import spray.json.DefaultJsonProtocol._
 import spray.json.{RootJsonFormat, _}
 

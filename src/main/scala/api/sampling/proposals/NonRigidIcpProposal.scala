@@ -24,7 +24,7 @@ import scalismo.geometry._
 import scalismo.mesh.{TriangleMesh, TriangleMesh3D}
 import scalismo.numerics.UniformMeshSampler3D
 import scalismo.sampling.{ProposalGenerator, TransitionProbability}
-import scalismo.statisticalmodel.{LowRankGaussianProcess, MultivariateNormalDistribution, StatisticalMeshModel}
+import scalismo.statisticalmodel.{LowRankGaussianProcess, MultivariateNormalDistribution, PointDistributionModel, StatisticalMeshModel}
 import scalismo.transformations.{RotationAfterTranslation, TranslationAfterRotation}
 import scalismo.utils.Memoize
 
@@ -71,10 +71,14 @@ case class NonRigidIcpProposal(
 
 
   override def logTransitionProbability(from: ModelFittingParameters, to: ModelFittingParameters): Double = {
-    val posterior = cashedPosterior(from)
-    val compensatedTo = to.copy(shapeParameters = ShapeParameters(from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength))
-    val pdf = posterior.logpdf(compensatedTo.shapeParameters.parameters)
-    pdf
+      val pos = icpPosterior(from)
+      val posterior = PointDistributionModel(referenceMesh, pos)
+
+      val compensatedTo = from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength
+      val toMesh = model.instance(compensatedTo)
+
+      val projectedTo = posterior.coefficients(toMesh)
+      pos.logpdf(projectedTo)
   }
 
 

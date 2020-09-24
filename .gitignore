@@ -26,7 +26,7 @@ target/
 .worksheet
 data/femur/SMIR/*
 data/hands/partial/*
-data/hands/log/*
+data/hands/logs/*
 data/hands/experiments/*
 data/hands/aligned/landmarks3D/*
 data/hands/registered/landmarks3D/*

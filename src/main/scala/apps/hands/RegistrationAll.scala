@@ -29,7 +29,7 @@ object RegistrationAll extends App{
     scalismo.initialize()
 
     val modelFile = new File(myPaths.handsPath, "hand2D_gp_s25_s50_s120_per.h5")
-    val modelLineMesh = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
+    val model = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
     val modelLMFile = new File(myPaths.handsPath, "reference-hand.json")
     val modelLM: Seq[Landmark[_2D]] = LandmarkIO.readLandmarksJson2D(modelLMFile).get
 
@@ -54,7 +54,7 @@ object RegistrationAll extends App{
 
               val ui = ScalismoUIHeadless()
 
-              val reg = HandRegistration(modelLineMesh, modelLM, targetGTFile, targetFile, targetLMFile, log)
+              val reg = HandRegistration(model, modelLM, targetGTFile, targetFile, targetLMFile, log)
               reg.run(ui = ui, numOfSamples = 1000)
           }
         }

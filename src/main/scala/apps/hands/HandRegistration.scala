@@ -19,11 +19,13 @@ package apps.hands
 import java.awt.Color
 import java.io.File
 
-import api.other.{RegistrationComparison, TargetSampling}
-import api.sampling2D.evaluators.TargetToModelEvaluation
+import api.other.{ModelAndTargetSampling, ModelSampling, RegistrationComparison, TargetSampling}
+import api.sampling2D.evaluators.{ModelToTargetEvaluation, TargetToModelEvaluation}
+import api.sampling2D.loggers.{JSONAcceptRejectLogger, jsonLogFormat}
 import api.sampling2D.{MixedProposalDistributions, ModelFittingParameters, ProductEvaluators, SamplingRegistration}
 import apps.scalismoExtension.FormatConverter
-import apps.util.Visualization2DHelper
+import apps.util.{LogHelper2D, Visualization2DHelper}
+import breeze.linalg.DenseVector
 import scalismo.geometry._
 import scalismo.io.{LandmarkIO, MeshIO}
 import scalismo.mesh._
@@ -44,11 +46,38 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
 
   private val targetLM = LandmarkIO.readLandmarksJson2D(targetLMFile).get
 
-  private val numOfEvaluatorPoints = model.reference.pointSet.numberOfPoints / 10 // Used for the likelihood evaluator
-  private val numOfICPPointSamples = model.rank * 2 // Used for the ICP proposal
+  private val numOfEvaluatorPoints = model.reference.pointSet.numberOfPoints/2 // Used for the likelihood evaluator
+  private val numOfICPPointSamples = math.min(model.rank*2, model.reference.pointSet.numberOfPoints/2) // Used for the ICP proposal
 
-  private val proposalRND: ProposalGeneratorWithTransition[ModelFittingParameters] = MixedProposalDistributions.mixedProposalRandom(model)
-  private val proposalICP: ProposalGeneratorWithTransition[ModelFittingParameters] =
+//  private val proposalLm: ProposalGeneratorWithTransition[ModelFittingParameters] =
+//    MixedProposalDistributions.mixedProposalICP(
+//      model,
+//      targetMesh,
+//      modelLM,
+//      targetLM,
+//      0,
+//      projectionDirection = TargetSampling,
+//      tangentialNoise = 5.0,
+//      noiseAlongNormal = 5.0,
+//      stepLength = 0.5,
+//      boundaryAware = true,
+//      useLandmarkCorrespondence = true
+//    )
+//  private val proposalICP: ProposalGeneratorWithTransition[ModelFittingParameters] =
+//    MixedProposalDistributions.mixedProposalICP(
+//      model,
+//      targetMesh,
+//      modelLM,
+//      targetLM,
+//      numOfICPPointSamples,
+//      projectionDirection = TargetSampling,
+//      tangentialNoise = 10.0,
+//      noiseAlongNormal = 2.0,
+//      stepLength = 0.5,
+//      boundaryAware = true,
+//      useLandmarkCorrespondence = false
+//    )
+  private val proposalICPLast: ProposalGeneratorWithTransition[ModelFittingParameters] =
     MixedProposalDistributions.mixedProposalICP(
       model,
       targetMesh,
@@ -56,17 +85,35 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
       targetLM,
       numOfICPPointSamples,
       projectionDirection = TargetSampling,
-      tangentialNoise = 10.0,
-      noiseAlongNormal = 2.0,
-      stepLength = 0.5
+      tangentialNoise = 4.0,
+      noiseAlongNormal = 4.0,
+      stepLength = 0.1,
+      boundaryAware = true,
+      useLandmarkCorrespondence = false
     )
-  private val proposal: ProposalGeneratorWithTransition[ModelFittingParameters] = MixtureProposal(Seq((0.5, proposalICP), (0.5, proposalRND)))
+//  private val proposalRND: ProposalGeneratorWithTransition[ModelFittingParameters] = MixedProposalDistributions.mixedProposalRandom(model)
+//  private val proposal: ProposalGeneratorWithTransition[ModelFittingParameters] = MixtureProposal(Seq((0.8, proposalICP), (0.2, proposalRND)))
 
-  private val evaluator = ProductEvaluators.proximityAndIndependent(
+//  private val evaluatorInitial = ProductEvaluators.proximityAndIndependent(
+//    model,
+//    targetMesh,
+//    TargetToModelEvaluation,
+//    uncertainty = 2.0,
+//    numberOfEvaluationPoints = numOfEvaluatorPoints
+//  )
+//
+//  private val evaluator = ProductEvaluators.proximityAndIndependent(
+//    model,
+//    targetMesh,
+//    TargetToModelEvaluation,
+//    uncertainty = 4.0,
+//    numberOfEvaluationPoints = numOfEvaluatorPoints
+//  )
+  private val evaluatorLast = ProductEvaluators.proximityAndIndependent(
     model,
     targetMesh,
     TargetToModelEvaluation,
-    uncertainty = 8.0,
+    uncertainty = 4.0,
     numberOfEvaluationPoints = numOfEvaluatorPoints
   )
 
@@ -90,21 +137,39 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
 
     val finalGroup = ui.createGroup("finalGroup")
 
+
+    val logObj = new JSONAcceptRejectLogger[ModelFittingParameters](logPath)
+    val bestPars = logObj.getBestFittingParsFromJSON
+
     val samplingRegistration = new SamplingRegistration(
       model,
       targetMesh,
       Option(ui),
-      modelUiUpdateInterval = 100,
-      acceptInfoPrintInterval = 500
+      modelUiUpdateInterval = 10,
+      acceptInfoPrintInterval = 20
     )
     val t0 = System.currentTimeMillis()
 
+//    val lmFit = samplingRegistration.runfitting(
+//      evaluatorInitial,
+//      proposalLm,
+//      50,
+//      initialModelParameters = initialParameters,
+//      jsonName = new File("tmp.json")
+//    )
+//    val bestInit = samplingRegistration.runfitting(
+//      evaluator,
+//      proposal,
+//      numOfSamples,
+//      initialModelParameters = Option(lmFit),
+//      jsonName = new File("tmp.json")
+//    )
     val best = samplingRegistration.runfitting(
-      evaluator,
-      proposal,
+      evaluatorLast,
+      proposalICPLast,
       numOfSamples,
-      initialModelParameters = initialParameters,
-      jsonName = logPath
+      initialModelParameters = Option(bestPars),
+      jsonName = new File("tmp.json")
     )
 
     val t1 = System.currentTimeMillis()

@@ -49,7 +49,7 @@ case class NonRigidIcpProposal(
   private val commonNames: Seq[String] = modelLMs.map(_.id) intersect targetLMs.map(_.id)
   private val landmarksPairs: Seq[(Landmark[_2D], Landmark[_2D])] = commonNames.map(name => (modelLMs.find(_.id == name).get, targetLMs.find(_.id == name).get))
 
-  private val correspondenceLandmarkPoints: IndexedSeq[(PointId, Point[_2D], MultivariateNormalDistribution, Boolean)] = landmarksPairs.map(f => (model.reference.pointSet.findClosestPoint(f._1.point).id, f._2.point, MultivariateNormalDistribution(DenseVector.zeros[Double](2), diag(DenseVector.ones[Double](2))), false)).toIndexedSeq
+  private val correspondenceLandmarkPoints: IndexedSeq[(PointId, Point[_2D], MultivariateNormalDistribution, Boolean, Double)] = landmarksPairs.map(f => (model.reference.pointSet.findClosestPoint(f._1.point).id, f._2.point, f._1.uncertainty.getOrElse(MultivariateNormalDistribution(DenseVector.zeros[Double](2), diag(DenseVector.ones[Double](2)))), false, 0.0)).toIndexedSeq
   private val referenceMesh = model.reference
   private val cashedPosterior: Memoize[ModelFittingParameters, LowRankGaussianProcess[_2D, EuclideanVector[_2D]]] = Memoize(icpPosterior, 20)
   private val modelIds: IndexedSeq[PointId] = scala.util.Random.shuffle(model.reference.pointSet.pointIds.toIndexedSeq).take(numOfSamplePoints)
@@ -74,13 +74,18 @@ case class NonRigidIcpProposal(
 
 
   override def logTransitionProbability(from: ModelFittingParameters, to: ModelFittingParameters): Double = {
-    val posterior = cashedPosterior(from)
+    val pos = cashedPosterior(from)
+    val posterior = PointDistributionModel(referenceMesh, pos)
 
-    val compensatedTo = to.copy(shapeParameters = ShapeParameters(from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength))
+    val compensatedTo = from.shapeParameters.parameters + ((to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength)
+    val toMesh = model.instance(compensatedTo)
 
-    val pdf = posterior.logpdf(compensatedTo.shapeParameters.parameters)
+    val projectedTo = posterior.coefficients(toMesh)
+    val pdf = pos.logpdf(projectedTo)
+    println(s"LogTransition ${pdf}")
     pdf
   }
+
 
   private def icpPosterior(theta: ModelFittingParameters): LowRankGaussianProcess[_2D, EuclideanVector[_2D]] = {
     def modelBasedDoubleProjectionClosestPointsEstimation(
@@ -95,6 +100,8 @@ case class NonRigidIcpProposal(
           val currentMeshPoint = currentMesh.pointSet.point(idInit)
           val targetPoint = target.pointSet.findClosestPoint(currentMeshPoint)
 
+          val distance = (currentMeshPoint - targetPoint.point).norm2
+
           val id = currentMesh.pointSet.findClosestPoint(targetPoint.point).id
           val modelNormal2D = currentMesh.vertexNormals(id)
 
@@ -104,13 +111,13 @@ case class NonRigidIcpProposal(
           idSet += id
 
           val noiseDistribution = SurfaceNoiseHelpers.surfaceNormalDependantNoise2D(modelNormal2D, noiseAlongNormal, tangentialNoise)
-          (id, targetPoint.point, noiseDistribution, isOnBoundary)
+          (id, targetPoint.point, noiseDistribution, isOnBoundary, distance)
       }
 
       val correspondenceFilteredInit = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
       val correspondenceFiltered = if (useLandmarkCorrespondence) correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
 
-      for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
+      for ((pointId, targetPoint, uncertainty, _, _) <- correspondenceFiltered) yield {
         val referencePoint = model.reference.pointSet.point(pointId)
         (referencePoint, targetPoint - referencePoint, uncertainty)
       }
@@ -122,19 +129,22 @@ case class NonRigidIcpProposal(
         id =>
           val currentMeshPoint = currentMesh.pointSet.point(id)
           val targetPoint = target.pointSet.findClosestPoint(currentMeshPoint)
+
+          val distance = (currentMeshPoint - targetPoint.point).norm2
+
           val modelNormal2D = currentMesh.vertexNormals(id)
           // is on boundary or normals pointing opposite directions
           val targetNormal = target.vertexNormals(targetPoint.id)
           val isOnBoundary = (modelNormal2D dot targetNormal) <= 0 || (target.topology.adjacentPointsForPoint(targetPoint.id).length < 2)
 
           val noiseDistribution = SurfaceNoiseHelpers.surfaceNormalDependantNoise2D(modelNormal2D, noiseAlongNormal, tangentialNoise)
-          (id, targetPoint.point, noiseDistribution, isOnBoundary)
+          (id, targetPoint.point, noiseDistribution, isOnBoundary, distance)
       }
 
       val correspondenceFilteredInit = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
       val correspondenceFiltered = if (useLandmarkCorrespondence) correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
 
-      for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
+      for ((pointId, targetPoint, uncertainty, _, _) <- correspondenceFiltered) yield {
         val referencePoint = model.reference.pointSet.point(pointId)
         (referencePoint, targetPoint - referencePoint, uncertainty)
       }
@@ -147,18 +157,28 @@ case class NonRigidIcpProposal(
 
         val id = currentMesh.pointSet.findClosestPoint(targetPoint).id
 
+        val distance = (targetPoint - currentMesh.pointSet.point(id)).norm2
+
         val modelNormal2D = currentMesh.vertexNormals(id)
         val targetNormal = target.vertexNormals(targetPointID)
         val isOnBoundary = (modelNormal2D dot targetNormal) <= 0 || (target.topology.adjacentPointsForPoint(targetPointID).length < 2)
 
         val noiseDistribution = SurfaceNoiseHelpers.surfaceNormalDependantNoise2D(modelNormal2D, noiseAlongNormal, tangentialNoise)
-        (id, targetPoint, noiseDistribution, isOnBoundary)
+        (id, targetPoint, noiseDistribution, isOnBoundary, distance)
       }
 
-      val correspondenceFilteredInit = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
-      val correspondenceFiltered = if (useLandmarkCorrespondence) correspondenceFilteredInit ++ correspondenceLandmarkPoints else correspondenceFilteredInit
+      val correspondencesAll = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
+      val correspondenceWithLM = if (useLandmarkCorrespondence) correspondencesAll ++ correspondenceLandmarkPoints else correspondencesAll
 
-      for ((pointId, targetPoint, uncertainty, _) <- correspondenceFiltered) yield {
+
+      val distinctPointIds = correspondenceWithLM.map(_._1).distinct
+      val avgDist = correspondenceWithLM.map(_._5).sum/correspondenceWithLM.length
+
+      val disCorrFilter = distinctPointIds.map(id => correspondenceWithLM.filter(_._1==id).minBy(_._5)).filter(_._5 <= avgDist)
+
+      println(s"Corr points used: ${disCorrFilter.length}")
+
+      for ((pointId, targetPoint, uncertainty, _, _) <- disCorrFilter) yield {
         val referencePoint = model.reference.pointSet.point(pointId)
         // (reference point, deformation vector in model space starting from reference, usually zero-mean observation uncertainty)
         (referencePoint, targetPoint - referencePoint, uncertainty)
