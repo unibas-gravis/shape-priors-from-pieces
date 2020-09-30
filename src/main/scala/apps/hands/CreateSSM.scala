@@ -18,7 +18,6 @@ package apps.hands
 
 import java.io.File
 
-import apps.util.myPaths
 import scalismo.geometry._2D
 import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.mesh.{LineMesh, LineMesh2D}
@@ -33,7 +32,7 @@ object CreateSSM {
   val experimentName = "shapemi_gauss_per_06_25"
   //  val experimentName = "shapemi_skel_ablation_07_03"
 
-  val experimentPath = new File(myPaths.handsPath, s"experiments/${experimentName}")
+  val experimentPath = new File(Paths.handPath, s"experiments/${experimentName}")
 
   val pcaPath = new File(experimentPath, s"pca_random-finger")
   //  val pcaPath = new File(experimentPath, s"pca_all-thumb")
@@ -54,7 +53,7 @@ object CreateSSM {
     println("starting app... Full")
     scalismo.initialize()
 
-    val modelFile = new File(myPaths.handsPath, "hand2D_gp_s25_s50_s120_per.h5") // Just need the reference from the model!!!
+    val modelFile = new File(Paths.handPath, "hand2D_gp_s25_s50_s120_per.h5") // Just need the reference from the model!!!
 
     val modelGPLineMesh = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
 
@@ -86,7 +85,7 @@ object CreateSSM {
         val keepOutName = keepOutList.head
         println(s"Keepout: ${keepOutName}")
 
-        val meshFullFiles = new File(myPaths.handsPath, "registered/mesh").listFiles(f =>
+        val meshFullFiles = new File(Paths.handPath, "registered/mesh").listFiles(f =>
           f.getName.startsWith(filesStartWith) &&
             f.getName.endsWith(".vtk") &&
             targetNameFullSeq.contains(f.getName.replace(".vtk", "")) &&

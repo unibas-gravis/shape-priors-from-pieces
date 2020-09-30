@@ -16,7 +16,7 @@
 
 package apps.hands
 
-import apps.util.{Visualization2DHelper, myPaths}
+import apps.util.Visualization2DHelper
 import scalismo.io.StatisticalModelIO
 import scalismo.ui.api.ScalismoUI
 import scalismo.utils.Random.implicits.randomGenerator
@@ -26,7 +26,7 @@ object VisualizeHandModel {
   def main(args: Array[String]) {
     scalismo.initialize()
 
-    val modelFile = myPaths.handsPath.listFiles(_.getName.endsWith(".h5")).head
+    val modelFile = Paths.handPath.listFiles(_.getName.endsWith(".h5")).head
 
     val model = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
 

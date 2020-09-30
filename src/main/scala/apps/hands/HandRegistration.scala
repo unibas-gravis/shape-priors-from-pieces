@@ -47,37 +47,23 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
   private val targetLM = LandmarkIO.readLandmarksJson2D(targetLMFile).get
 
   private val numOfEvaluatorPoints = model.reference.pointSet.numberOfPoints/2 // Used for the likelihood evaluator
-  private val numOfICPPointSamples = math.min(model.rank*2, model.reference.pointSet.numberOfPoints/2) // Used for the ICP proposal
-
-//  private val proposalLm: ProposalGeneratorWithTransition[ModelFittingParameters] =
-//    MixedProposalDistributions.mixedProposalICP(
-//      model,
-//      targetMesh,
-//      modelLM,
-//      targetLM,
-//      0,
-//      projectionDirection = TargetSampling,
-//      tangentialNoise = 5.0,
-//      noiseAlongNormal = 5.0,
-//      stepLength = 0.5,
-//      boundaryAware = true,
-//      useLandmarkCorrespondence = true
-//    )
-//  private val proposalICP: ProposalGeneratorWithTransition[ModelFittingParameters] =
-//    MixedProposalDistributions.mixedProposalICP(
-//      model,
-//      targetMesh,
-//      modelLM,
-//      targetLM,
-//      numOfICPPointSamples,
-//      projectionDirection = TargetSampling,
-//      tangentialNoise = 10.0,
-//      noiseAlongNormal = 2.0,
-//      stepLength = 0.5,
-//      boundaryAware = true,
-//      useLandmarkCorrespondence = false
-//    )
-  private val proposalICPLast: ProposalGeneratorWithTransition[ModelFittingParameters] =
+  private val numOfICPPointSamples = math.min(model.reference.pointSet.numberOfPoints/2, targetMesh.pointSet.numberOfPoints/2) // Used for the ICP proposal
+  println(s"Number of icp points: ${numOfICPPointSamples}")
+  private val proposalLm: ProposalGeneratorWithTransition[ModelFittingParameters] =
+    MixedProposalDistributions.mixedProposalICP(
+      model,
+      targetMesh,
+      modelLM,
+      targetLM,
+      0,
+      projectionDirection = TargetSampling,
+      tangentialNoise = 5.0,
+      noiseAlongNormal = 5.0,
+      stepLength = 0.5,
+      boundaryAware = true,
+      useLandmarkCorrespondence = true
+    )
+  private val proposalICP: ProposalGeneratorWithTransition[ModelFittingParameters] =
     MixedProposalDistributions.mixedProposalICP(
       model,
       targetMesh,
@@ -85,31 +71,16 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
       targetLM,
       numOfICPPointSamples,
       projectionDirection = TargetSampling,
-      tangentialNoise = 4.0,
+      tangentialNoise = 32.0,
       noiseAlongNormal = 4.0,
-      stepLength = 0.1,
+      stepLength = 0.5,
       boundaryAware = true,
       useLandmarkCorrespondence = false
     )
-//  private val proposalRND: ProposalGeneratorWithTransition[ModelFittingParameters] = MixedProposalDistributions.mixedProposalRandom(model)
-//  private val proposal: ProposalGeneratorWithTransition[ModelFittingParameters] = MixtureProposal(Seq((0.8, proposalICP), (0.2, proposalRND)))
+  private val proposalRND: ProposalGeneratorWithTransition[ModelFittingParameters] = MixedProposalDistributions.mixedProposalRandom(model)
+  private val proposalMix: ProposalGeneratorWithTransition[ModelFittingParameters] = MixtureProposal(Seq((0.5, proposalICP), (0.5, proposalRND)))
 
-//  private val evaluatorInitial = ProductEvaluators.proximityAndIndependent(
-//    model,
-//    targetMesh,
-//    TargetToModelEvaluation,
-//    uncertainty = 2.0,
-//    numberOfEvaluationPoints = numOfEvaluatorPoints
-//  )
-//
-//  private val evaluator = ProductEvaluators.proximityAndIndependent(
-//    model,
-//    targetMesh,
-//    TargetToModelEvaluation,
-//    uncertainty = 4.0,
-//    numberOfEvaluationPoints = numOfEvaluatorPoints
-//  )
-  private val evaluatorLast = ProductEvaluators.proximityAndIndependent(
+  private val evaluatorInitial = ProductEvaluators.proximityAndIndependent(
     model,
     targetMesh,
     TargetToModelEvaluation,
@@ -117,8 +88,16 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
     numberOfEvaluationPoints = numOfEvaluatorPoints
   )
 
-  def run(ui: SimpleAPI, numOfSamples: Int = 1000, initialParameters: Option[ModelFittingParameters] = None, showNormals: Boolean = false): Unit = {
+  private val evaluator = ProductEvaluators.proximityAndIndependent(
+    model,
+    targetMesh,
+    TargetToModelEvaluation,
+    uncertainty = 4.0,
+    numberOfEvaluationPoints = numOfEvaluatorPoints
+  )
 
+
+  def run(ui: SimpleAPI, numOfSamples: Int = 1000, initialParameters: Option[ModelFittingParameters] = None, showNormals: Boolean = false): Unit = {
 
     val modelGroup = ui.createGroup("model")
     ui.show(modelGroup, referenceLineMesh3D, "model-reference")
@@ -137,10 +116,6 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
 
     val finalGroup = ui.createGroup("finalGroup")
 
-
-    val logObj = new JSONAcceptRejectLogger[ModelFittingParameters](logPath)
-    val bestPars = logObj.getBestFittingParsFromJSON
-
     val samplingRegistration = new SamplingRegistration(
       model,
       targetMesh,
@@ -150,26 +125,19 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
     )
     val t0 = System.currentTimeMillis()
 
-//    val lmFit = samplingRegistration.runfitting(
-//      evaluatorInitial,
-//      proposalLm,
-//      50,
-//      initialModelParameters = initialParameters,
-//      jsonName = new File("tmp.json")
-//    )
-//    val bestInit = samplingRegistration.runfitting(
-//      evaluator,
-//      proposal,
-//      numOfSamples,
-//      initialModelParameters = Option(lmFit),
-//      jsonName = new File("tmp.json")
-//    )
-    val best = samplingRegistration.runfitting(
-      evaluatorLast,
-      proposalICPLast,
-      numOfSamples,
-      initialModelParameters = Option(bestPars),
+    val lmFit = samplingRegistration.runfitting(
+      evaluatorInitial,
+      proposalLm,
+      100,
+      initialModelParameters = initialParameters,
       jsonName = new File("tmp.json")
+    )
+    val best = samplingRegistration.runfitting(
+      evaluator,
+      proposalMix,
+      numOfSamples,
+      initialModelParameters = Option(lmFit),
+      jsonName = logPath
     )
 
     val t1 = System.currentTimeMillis()

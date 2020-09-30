@@ -28,7 +28,7 @@ import scalismo.utils.Random.implicits._
 
 object MixedProposalDistributions {
   def mixedProposalRandom(model: PointDistributionModel[_2D, LineMesh]): ProposalGeneratorWithTransition[ModelFittingParameters] = {
-    MixtureProposal(1.0 *: RandomShapeUpdateProposal(model, 0.01, generatedBy = "RandomShape-0.01"))
+    MixtureProposal(1.0 *: RandomShapeUpdateProposal(model, 0.02, generatedBy = "RandomShape-0.02"))
   }
 
   def mixedProposalICP(

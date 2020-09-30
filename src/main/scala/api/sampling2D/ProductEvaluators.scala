@@ -25,6 +25,16 @@ import scalismo.statisticalmodel.PointDistributionModel
 
 object ProductEvaluators {
 
+  def acceptAll(): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
+    val evaluator: ProductEvaluator[ModelFittingParameters] = ProductEvaluator(
+      AcceptAllEvaluator()
+    )
+    val evaluatorMap: Map[String, DistributionEvaluator[ModelFittingParameters]] = Map(
+      "product" -> evaluator
+    )
+    evaluatorMap
+  }
+
   def proximityAndIndependent(model: PointDistributionModel[_2D, LineMesh], target: LineMesh[_2D], evaluationMode: EvaluationMode, uncertainty: Double = 1.0, numberOfEvaluationPoints: Int = 100): Map[String, DistributionEvaluator[ModelFittingParameters]] = {
     val likelihoodIndependent = breeze.stats.distributions.Gaussian(0, uncertainty)
 

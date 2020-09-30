@@ -75,15 +75,10 @@ case class NonRigidIcpProposal(
 
   override def logTransitionProbability(from: ModelFittingParameters, to: ModelFittingParameters): Double = {
     val pos = cashedPosterior(from)
-    val posterior = PointDistributionModel(referenceMesh, pos)
 
     val compensatedTo = from.shapeParameters.parameters + ((to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength)
-    val toMesh = model.instance(compensatedTo)
 
-    val projectedTo = posterior.coefficients(toMesh)
-    val pdf = pos.logpdf(projectedTo)
-    println(s"LogTransition ${pdf}")
-    pdf
+    pos.logpdf(compensatedTo)
   }
 
 
@@ -173,10 +168,10 @@ case class NonRigidIcpProposal(
 
       val distinctPointIds = correspondenceWithLM.map(_._1).distinct
       val avgDist = correspondenceWithLM.map(_._5).sum/correspondenceWithLM.length
+      val maxDist = correspondenceWithLM.map(_._5).max
+      val cutoff = math.min(3*avgDist,(maxDist+avgDist)/2.0)
 
-      val disCorrFilter = distinctPointIds.map(id => correspondenceWithLM.filter(_._1==id).minBy(_._5)).filter(_._5 <= avgDist)
-
-      println(s"Corr points used: ${disCorrFilter.length}")
+      val disCorrFilter = distinctPointIds.map(id => correspondenceWithLM.filter(_._1==id).minBy(_._5)).filter(_._5 <= cutoff)
 
       for ((pointId, targetPoint, uncertainty, _, _) <- disCorrFilter) yield {
         val referencePoint = model.reference.pointSet.point(pointId)

@@ -19,7 +19,6 @@ package apps.hands
 import java.io._
 
 import apps.scalismoExtension.LineModelMetrics
-import apps.util.myPaths
 import scalismo.geometry._2D
 import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.mesh.LineMesh
@@ -49,13 +48,13 @@ object ComparePCAmodels {
   val experimentName = "shapemi_gauss_per_06_25"
   //    val experimentName = "shapemi_skel_ablation_07_03"
 
-  val experimentPath = new File(myPaths.handsPath, s"experiments/${experimentName}")
+  val experimentPath = new File(Paths.handPath, s"experiments/${experimentName}")
 
   val pcaPath = new File(experimentPath, s"pca_random-finger")
 
 
   val resultOutJsonLogFile = new File(experimentPath, s"out/experimentLog_${experimentName}_random-finger.json")
-  val registeredPath = new File(myPaths.handsPath, s"registered/")
+  val registeredPath = new File(Paths.handPath, s"registered/")
 
   println(s"PCA path: ${pcaPath}, experiment path: ${experimentPath}, json output: ${resultOutJsonLogFile}")
 
@@ -64,7 +63,7 @@ object ComparePCAmodels {
 
   def printModelGeneralization: Unit = {
     println("Generalization:")
-    val gtDatasetFiles = new File(myPaths.handsPath, "registered/mesh").listFiles(_.getName.endsWith(".vtk"))
+    val gtDatasetFiles = new File(Paths.handPath, "registered/mesh").listFiles(_.getName.endsWith(".vtk"))
 
     println("Full model")
     val fullRes: Array[IndexedSeq[Double]] = gtDatasetFiles.map { f =>

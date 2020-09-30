@@ -19,7 +19,7 @@ package apps.hands
 import java.awt.Color
 import java.io.File
 
-import apps.util.{LogHelper2D, Visualization2DHelper, myPaths}
+import apps.util.{LogHelper2D, Visualization2DHelper}
 import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.ui.api.ScalismoUI
 import scalismo.utils.Random.implicits.randomGenerator
@@ -29,11 +29,11 @@ object VisualizeLog {
   def main(args: Array[String]) {
     scalismo.initialize()
 
-    val logPath = myPaths.handsLogPath
+    val logPath = Paths.handLogPath
     val targetpartialname = "hand-1_thumb_15"
 
 
-    val modelFile = myPaths.handsPath.listFiles(_.getName.endsWith(".h5")).head
+    val modelFile = Paths.handPath.listFiles(_.getName.endsWith(".h5")).head
 
     val model = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
 

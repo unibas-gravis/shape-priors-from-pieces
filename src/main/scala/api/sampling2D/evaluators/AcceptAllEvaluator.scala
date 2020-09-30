@@ -14,11 +14,19 @@
  *  limitations under the License.
  */
 
-package apps.util
+package api.sampling2D.evaluators
 
-import java.io.File
+import api.sampling2D.ModelFittingParameters
+import scalismo.sampling.DistributionEvaluator
 
-object myPaths {
-  val handsPath: File = new File("data/hands")
-  val handsLogPath: File = new File(handsPath, "logs")
+case class AcceptAllEvaluator()
+  extends DistributionEvaluator[ModelFittingParameters] with EvaluationCaching {
+
+  override def computeLogValue(sample: ModelFittingParameters): Double = {
+    0.0
+  }
 }
+
+
+
+

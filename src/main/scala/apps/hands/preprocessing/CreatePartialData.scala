@@ -18,7 +18,7 @@ package apps.hands.preprocessing
 
 import java.io.File
 
-import apps.util.myPaths
+import apps.hands.Paths
 import scalismo.common.PointId
 import scalismo.common.UnstructuredPoints.Create.CreateUnstructuredPoints2D
 import scalismo.geometry._
@@ -79,8 +79,8 @@ object CreatePartialData {
   def main(args: Array[String]) {
     scalismo.initialize()
 
-    val alignedFiles = new File(myPaths.handsPath, "aligned/mesh").listFiles(_.getName.endsWith(".vtk")).sorted
-    val alignedLMFiles = new File(myPaths.handsPath, "aligned/landmarks").listFiles(_.getName.endsWith(".json"))
+    val alignedFiles = new File(Paths.handPath, "aligned/mesh").listFiles(_.getName.endsWith(".vtk")).sorted
+    val alignedLMFiles = new File(Paths.handPath, "aligned/landmarks").listFiles(_.getName.endsWith(".json"))
 
     alignedFiles.foreach { targetFile =>
       val targetname = targetFile.getName.replace(".vtk", "")
@@ -101,9 +101,9 @@ object CreatePartialData {
         val percentageCutSeq = Seq(5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90)
         percentageCutSeq.foreach { percentageCut =>
 
-          val outputPathLM = new File(myPaths.handsPath, s"partial/landmarks")
+          val outputPathLM = new File(Paths.handPath, s"partial/landmarks")
           outputPathLM.mkdirs()
-          val outputPathMesh = new File(myPaths.handsPath, s"partial/mesh")
+          val outputPathMesh = new File(Paths.handPath, s"partial/mesh")
           outputPathMesh.mkdirs()
           val outputFileLM = new File(outputPathLM, s"${targetname}_${finger}_${percentageCut}.json")
           val outputFileMesh = new File(outputPathMesh, s"${targetname}_${finger}_${percentageCut}.vtk")

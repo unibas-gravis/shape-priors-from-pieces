@@ -18,8 +18,9 @@ package apps.hands.preprocessing
 
 import java.io.File
 
+import apps.hands.Paths
 import apps.scalismoExtension.FormatConverter
-import apps.util.{Visualization2DHelper, myPaths}
+import apps.util.Visualization2DHelper
 import breeze.linalg.DenseMatrix
 import scalismo.common.interpolation.NearestNeighborInterpolator
 import scalismo.common.{Domain, EuclideanSpace, Field}
@@ -138,11 +139,11 @@ object Create2DGPModel {
 
     implicit val rng: Random = scalismo.utils.Random(42)
 
-    val zeroMean: AnyRef with Field[_2D, EuclideanVector[_2D]] = Field(EuclideanSpace[_2D], (pt: Point[_2D]) => EuclideanVector(0, 0))
+    val zeroMean: AnyRef with Field[_2D, EuclideanVector[_2D]] = Field(EuclideanSpace[_2D], _ => EuclideanVector.zeros[_2D])
 
-    val referenceMesh = MeshIO.readLineMesh2D(new File(myPaths.handsPath, "reference-hand.vtk")).get
+    val referenceMesh = MeshIO.readLineMesh2D(new File(Paths.handPath, "reference-hand.vtk")).get
 
-    val lmsFile = LandmarkIO.readLandmarksJson[_2D](new File(myPaths.handsPath, "reference-hand.json")).get
+    val lmsFile = LandmarkIO.readLandmarksJson[_2D](new File(Paths.handPath, "reference-hand.json")).get
     val smalltip = lmsFile.find(_.id == "finger.small.tip").get
     val radialend = lmsFile.find(_.id == "finger.radial.middle").get
     val mean = (smalltip.point + radialend.point.toVector).map(_ / 2.0)
@@ -163,7 +164,7 @@ object Create2DGPModel {
 
     val ssm = PointDistributionModel(referenceMesh, lowRankGP)
 
-    StatisticalModelIO.writeStatisticalLineMeshModel2D(ssm, new File(myPaths.handsPath, "hand2D_gp_s25_s50_s120_per.h5"))
+    StatisticalModelIO.writeStatisticalLineMeshModel2D(ssm, new File(Paths.handPath, "hand2D_gp_s25_s50_s120_per.h5"))
 
     println(s"Model created with ${ssm.gp.rank} components")
 

@@ -67,10 +67,6 @@ object SurfaceNoiseHelpers {
 
     val normalDirection = surfaceNormal.normalize
 
-    /* There is an infinite number of perpendicular vectors, any one will do.
-    * To find any perpendicular vector, just take the cross product with any other, non-parallel vector.
-    * We try (1,0,0), and if it happened to be parallel, the crossproduct is (0,0,0), and we take another.
-    */
     val tangentialVector = EuclideanVector2D(normalDirection.y, -normalDirection.x)
 
     val normalNoiseVariance = stdDevNoiseAlongSurfaceNormal * stdDevNoiseAlongSurfaceNormal

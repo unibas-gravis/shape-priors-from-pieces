@@ -17,7 +17,7 @@
 package apps.hands
 
 import java.io.File
-import apps.util.{LogHelper2D, myPaths}
+import apps.util.LogHelper2D
 import scalismo.io.{MeshIO, StatisticalModelIO}
 
 import scala.collection.parallel.ForkJoinTaskSupport
@@ -28,12 +28,12 @@ object Logs2Meshes {
   def main(args: Array[String]) {
     scalismo.initialize()
 
-    val logPath = myPaths.handsLogPath
+    val logPath = Paths.handLogPath
 
-    val modelFile = new File(myPaths.handsPath, "hand2D_gp_s25_s50_s120_per.h5")
+    val modelFile = new File(Paths.handPath, "hand2D_gp_s25_s50_s120_per.h5")
     val model = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
 
-    val experimentPath = new File(myPaths.handsPath, s"experiments/shapemi/allFingers15pMissing")
+    val experimentPath = new File(Paths.handPath, s"experiments/shapemi/allFingers15pMissing")
     experimentPath.mkdirs()
 
     println(s"ExperimentPATH: ${experimentPath}")
