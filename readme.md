@@ -52,6 +52,8 @@ The test dataset we use is the same as used in the [Statistical Shape Modelling 
 - Extract the folder under **data/femur/SMIR**, such that the mesh **0.stl** can be found under **data/femur/SMIR/step2/meshes**
 - Align all the test meshes to the model by running the **apps/femur/AlignShapes** script
 
+The repository already contains Gaussian Process Morphable Models (GPMMs) of the femur - approximated with 50 basis functions. 
+
 ### Experiment
 First the data need to be aligned. 
 - **femur/preprocessing/AlignShapes**: Align all shapes from SMIR to the reference mesh using a few manually clicked landmarks.
@@ -67,16 +69,3 @@ And finally we can compare the differently created models
 - **femur/CompareModels**
 
 - **femur/RegistrationOfCompleteFemurs**: Registration of complete femurs.
-
-The repository already contains Gaussian Process Morphable Models (GPMMs) of the femur - approximated with 50 and 100 basis functions. 
-A synthetic target is also provided. 
-Without downloading the full test dataset from SMIR, the registration can be performed on the target mesh.
-
-
-- **IcpProposalRegistration**: Performs a probabilistic registration using *our* method described in the paper.
-- **GreateGPmodel**: Create a new GPMM with a user defined number of basis functions.
-
-The log file for the target registration with 100.000 samples is avilable, the following scripts can be used for replay and visualisation:
-
-- **ReplayFittingFromLog**: Replay a fitting from a log file
-- **PosteriorVariabilityToMeshColor**: Create a color map on the MAP solution to visualise the registration uncertainty

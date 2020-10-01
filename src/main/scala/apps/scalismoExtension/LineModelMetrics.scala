@@ -58,7 +58,7 @@ object LineModelMetrics {
 
     ParVector.range(0, nbSamples).map { _ =>
       val sample = pcaModel.sample
-      data.map { m => LineMeshMetrics2D.avgDistance(m, sample)}.min
+      data.map { m => LineMeshMetrics2D.avgDistance(m, sample) }.min
     }.sum * (1.0 / nbSamples)
   }
 

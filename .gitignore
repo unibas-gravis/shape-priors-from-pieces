@@ -30,3 +30,4 @@ data/hand/logs/*
 data/hand/experiments/*
 data/hand/aligned/landmarks3D/*
 data/hand/registered/landmarks3D/*
+data/hand/shapemi/*

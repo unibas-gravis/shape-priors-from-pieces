@@ -46,7 +46,7 @@ object CreatePDMsFromFiles {
     val ref = gpModel.referenceMesh
 
     val basePath = Paths.generalPath
-    val meshesGtPath = new File(basePath, "registered/meshes").listFiles(f => f.getName.endsWith(".vtk") && f.getName.replace(".stl", "").toInt < modelIndexThreshold)
+    val meshesGtPath = new File(basePath, "registered/meshes").listFiles(f => f.getName.endsWith(".vtk") && f.getName.replace(".vtk", "").toInt < modelIndexThreshold)
     val meshesMapPath = new File(basePath, "shapemi/map").listFiles(_.getName.endsWith(".vtk"))
     val meshesMeanPath = new File(basePath, "shapemi/mean").listFiles(_.getName.endsWith(".vtk"))
     val meshesSamplePath = new File(basePath, "shapemi/samples").listFiles(_.getName.endsWith(".vtk"))

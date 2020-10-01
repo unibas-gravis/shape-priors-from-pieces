@@ -53,7 +53,6 @@ object LineMeshMetrics2D {
     val d2 = allDistsBetweenMeshes(m2, m1)
 
     Math.max(d1.max, d2.max)
-
   }
 
   def procrustesDistance(m1: LineMesh[_2D], m2: LineMesh[_2D]): Double = {
@@ -67,6 +66,4 @@ object LineMeshMetrics2D {
     }
     dists.sum / m1.pointSet.numberOfPoints
   }
-
-
 }
