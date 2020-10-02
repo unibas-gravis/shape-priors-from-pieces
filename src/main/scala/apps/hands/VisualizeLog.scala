@@ -19,7 +19,7 @@ package apps.hands
 import java.awt.Color
 import java.io.File
 
-import apps.util.{LogHelper2D, Visualization2DHelper}
+import apps.util.{LogHelper2D, VisualizationHelper}
 import scalismo.io.{MeshIO, StatisticalModelIO}
 import scalismo.ui.api.ScalismoUI
 
@@ -47,9 +47,9 @@ object VisualizeLog extends App {
   val targetGroup = ui.createGroup("target")
   val regGroup = ui.createGroup("registrations")
 
-  Visualization2DHelper.show2DLineMesh(ui, modelGroup, model.reference, "reference").opacity = 0f
-  Visualization2DHelper.show2DLineMesh(ui, targetGroup, targetMesh, "target").color = Color.RED
-  Visualization2DHelper.show2DLineMesh(ui, targetGroup, targetGTMesh, "grount-truth").opacity = 0f
+  VisualizationHelper.show2DLineMesh(ui, modelGroup, model.reference, "reference").color = Color.BLUE
+  VisualizationHelper.show2DLineMesh(ui, targetGroup, targetMesh, "target").color = Color.RED
+  VisualizationHelper.show2DLineMesh(ui, targetGroup, targetGTMesh, "grount-truth").color = Color.ORANGE
 
   val burnInPhase = 200
   val logFile = new File(logPath, partialName + ".json")
@@ -58,11 +58,10 @@ object VisualizeLog extends App {
   val rndShapes = log.sampleMeshes2D(takeEveryN = 20, total = 10000, randomize = true)
 
   val best = log.mapMesh2D()
-  Visualization2DHelper.show2DLineMesh(ui, regGroup, best, "MAP")
-
-  rndShapes.take(50).zipWithIndex.foreach { case (m, i) =>
-    Visualization2DHelper.show2DLineMesh(ui, regGroup, m, s"sample-${i}")
-  }
   val mean = log.meanMesh2D(takeEveryN = 50)
-  Visualization2DHelper.show2DLineMesh(ui, regGroup, mean, "MEAN")
+  VisualizationHelper.show2DLineMesh(ui, regGroup, best, "MAP")
+  VisualizationHelper.show2DLineMesh(ui, regGroup, mean, "MEAN")
+  rndShapes.take(50).zipWithIndex.foreach { case (m, i) =>
+    VisualizationHelper.show2DLineMesh(ui, regGroup, m, s"sample-${i}")
+  }
 }

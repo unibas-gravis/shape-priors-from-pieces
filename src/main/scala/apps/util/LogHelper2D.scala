@@ -20,8 +20,9 @@ import java.io.File
 
 import api.sampling2D.ModelFittingParameters
 import api.sampling2D.loggers.{JSONAcceptRejectLogger, jsonLogFormat}
+import apps.util.VisualizationHelper.{pointSetFromDenseVector, vectorizePointSet}
 import scalismo.common.UnstructuredPoints.Create.CreateUnstructuredPoints2D
-import scalismo.geometry.{EuclideanVector, _2D}
+import scalismo.geometry._2D
 import scalismo.mesh.LineMesh
 import scalismo.statisticalmodel.PointDistributionModel
 
@@ -58,21 +59,15 @@ case class LogHelper2D(file: File, model: PointDistributionModel[_2D, LineMesh],
   def meanMesh2D(takeEveryN: Int = 1): LineMesh[_2D] = {
     val indexes = (burnIn until log.length by takeEveryN).map(i => getLogIndex(i))
     val filtered = indexes.map(i => (log(i)))
-
     val nMeshes = filtered.length
     println(s"Computing mean from: ${nMeshes}/${log.length - burnIn} in steps of ${takeEveryN}")
-
-    val meanDeformations = reference.pointSet.pointIds.map(id => {
-      var meanDeformationForId = EuclideanVector(0, 0)
-      filtered.foreach(l => { // loop through meshes
-        val mesh = logToMesh(l)
-        val deformationAtId = mesh.pointSet.point(id) - reference.pointSet.point(id)
-        meanDeformationForId += deformationAtId * (1.0 / nMeshes)
-      })
-      meanDeformationForId
-    })
-    val meanPoints = (reference.pointSet.points.toIndexedSeq zip meanDeformations.toIndexedSeq).map { case (p, v) => (p + v) }
-    val meanMesh = LineMesh[_2D](CreateUnstructuredPoints2D.create(meanPoints), reference.topology)
+    val vectorizedPoints = filtered.map { l =>
+      val mesh = logToMesh(l)
+      vectorizePointSet(mesh.pointSet)
+    }
+    val meanVector = vectorizedPoints.reduce(_ + _) * (1.0 / nMeshes)
+    val meanPoints = pointSetFromDenseVector[_2D](meanVector)
+    val meanMesh = LineMesh[_2D](meanPoints, reference.topology)
     meanMesh
   }
 

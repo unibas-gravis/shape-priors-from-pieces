@@ -20,13 +20,33 @@ import java.awt.Color
 
 import apps.scalismoExtension.FormatConverter
 import breeze.linalg.DenseVector
-import scalismo.common.{DiscreteField, UnstructuredPointsDomain}
-import scalismo.geometry.{EuclideanVector, Landmark, _2D, _3D}
+import scalismo.common.UnstructuredPoints.Create
+import scalismo.common.{DiscreteField, UnstructuredPoints, UnstructuredPointsDomain, Vectorizer}
+import scalismo.geometry.{EuclideanVector, Landmark, NDSpace, Point, _2D, _3D}
 import scalismo.mesh.{LineMesh, LineMesh2D, LineMesh3D}
 import scalismo.statisticalmodel.PointDistributionModel
 import scalismo.ui.api._
 
-object Visualization2DHelper {
+object VisualizationHelper {
+
+  def pointSetFromDenseVector[D: NDSpace](d: DenseVector[Double])(implicit vectorizer: Vectorizer[Point[D]], creator: Create[D]): UnstructuredPoints[D] = {
+    val dim = vectorizer.dim
+    val data = d.toArray.grouped(dim).map(e => vectorizer.unvectorize(DenseVector(e))).toIndexedSeq
+    creator.create(data)
+  }
+
+  def vectorizePointSet[D](pointSet: UnstructuredPoints[D])(implicit vectorizer: Vectorizer[Point[D]]): DenseVector[Double] = {
+    val dim = vectorizer.dim
+    val fullDim = pointSet.numberOfPoints * dim
+    val M = DenseVector.zeros[Double](fullDim)
+    for (i <- pointSet.pointsWithId) {
+      val m = vectorizer.vectorize(i._1)
+      for (x <- 0 until dim) {
+        M(i._2.id * dim + x) = m(x)
+      }
+    }
+    M
+  }
 
   def show2DLandmarks(ui: SimpleAPI, group: Group, landmarks: Seq[Landmark[_2D]], name: String): Seq[LandmarkView] = {
     val lm3D: Seq[Landmark[_3D]] = FormatConverter.landmark2Dto3D(landmarks)

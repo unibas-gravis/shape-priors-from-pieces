@@ -20,7 +20,7 @@ import java.io.File
 
 import apps.hands.Paths
 import apps.scalismoExtension.FormatConverter
-import apps.util.Visualization2DHelper
+import apps.util.VisualizationHelper
 import breeze.linalg.DenseMatrix
 import scalismo.common.interpolation.NearestNeighborInterpolator
 import scalismo.common.{Domain, EuclideanSpace, Field}
@@ -183,6 +183,6 @@ object Create2DGPModel {
 
     val pcGroup = ui.createGroup("PCs")
 
-    Visualization2DHelper.visualizePCsamples(ui, ssm, pcGroup)
+    VisualizationHelper.visualizePCsamples(ui, ssm, pcGroup)
   }
 }

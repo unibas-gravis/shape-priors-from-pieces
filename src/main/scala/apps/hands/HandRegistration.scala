@@ -23,7 +23,7 @@ import api.other.{RegistrationComparison, TargetSampling}
 import api.sampling2D.evaluators.TargetToModelEvaluation
 import api.sampling2D.{MixedProposalDistributions, ModelFittingParameters, ProductEvaluators, SamplingRegistration}
 import apps.scalismoExtension.FormatConverter
-import apps.util.Visualization2DHelper
+import apps.util.VisualizationHelper
 import scalismo.geometry._
 import scalismo.io.{LandmarkIO, MeshIO}
 import scalismo.mesh._
@@ -101,15 +101,15 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
     ui.show(modelGroup, referenceLineMesh3D, "model-reference")
 
     val targetGroup = ui.createGroup("target")
-    val showGT = Visualization2DHelper.show2DLineMesh(ui, targetGroup, targetGTMesh, "Ground-truth")
-    val showTarget = Visualization2DHelper.show2DLineMesh(ui, targetGroup, targetMesh, targetFile.getName)
+    val showGT = VisualizationHelper.show2DLineMesh(ui, targetGroup, targetGTMesh, "Ground-truth")
+    val showTarget = VisualizationHelper.show2DLineMesh(ui, targetGroup, targetMesh, targetFile.getName)
     showGT.color = Color.ORANGE
     showTarget.color = Color.RED
 
     if (showNormals) {
-      Visualization2DHelper.show2DLineMeshNormals(ui, modelGroup, model.reference, "normals")
-      Visualization2DHelper.show2DLineMeshNormals(ui, targetGroup, targetMesh, "normals")
-      Visualization2DHelper.show2DLineMeshNormals(ui, targetGroup, targetGTMesh, "normals")
+      VisualizationHelper.show2DLineMeshNormals(ui, modelGroup, model.reference, "normals")
+      VisualizationHelper.show2DLineMeshNormals(ui, targetGroup, targetMesh, "normals")
+      VisualizationHelper.show2DLineMeshNormals(ui, targetGroup, targetGTMesh, "normals")
     }
 
     val finalGroup = ui.createGroup("finalGroup")
@@ -142,7 +142,7 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
     println(s"ICP-Timing: ${(t1 - t0) / 1000.0} sec")
     val bestMesh = ModelFittingParameters.transformedMesh(model, best)
 
-    Visualization2DHelper.show2DLineMesh(ui, finalGroup, bestMesh, "best-fit")
+    VisualizationHelper.show2DLineMesh(ui, finalGroup, bestMesh, "best-fit")
     RegistrationComparison.evaluateReconstruction2GroundTruth("SAMPLE", targetMesh, bestMesh)
 
   }

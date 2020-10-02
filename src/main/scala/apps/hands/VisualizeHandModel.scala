@@ -16,7 +16,7 @@
 
 package apps.hands
 
-import apps.util.Visualization2DHelper
+import apps.util.VisualizationHelper
 import scalismo.io.StatisticalModelIO
 import scalismo.ui.api.ScalismoUI
 import scalismo.utils.Random.implicits.randomGenerator
@@ -30,11 +30,11 @@ object VisualizeHandModel extends App {
 
   val ui = ScalismoUI("Visualize hand model")
   val modelGroup = ui.createGroup("model")
-  Visualization2DHelper.visualizePCsamples(ui, model, modelGroup)
+  VisualizationHelper.visualizePCsamples(ui, model, modelGroup)
 
   val randomGroup = ui.createGroup("random")
   (0 until 10).foreach { i =>
-    val showing = Visualization2DHelper.show2DLineMesh(ui, randomGroup, model.sample(), s"${i}")
+    val showing = VisualizationHelper.show2DLineMesh(ui, randomGroup, model.sample(), s"${i}")
     showing.opacity = 0f
   }
 }

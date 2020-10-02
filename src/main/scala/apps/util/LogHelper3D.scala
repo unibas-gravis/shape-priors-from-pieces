@@ -20,8 +20,8 @@ import java.io.File
 
 import api.sampling.ModelFittingParameters
 import api.sampling.loggers.{JSONAcceptRejectLogger, jsonLogFormat}
-import scalismo.common.UnstructuredPointsDomain.Create.CreateUnstructuredPointsDomain3D
-import scalismo.geometry.{EuclideanVector, _3D}
+import apps.util.VisualizationHelper.{pointSetFromDenseVector, vectorizePointSet}
+import scalismo.geometry._3D
 import scalismo.mesh.{TriangleMesh, TriangleMesh3D}
 import scalismo.statisticalmodel.StatisticalMeshModel
 
@@ -71,22 +71,15 @@ case class LogHelper3D(file: File, model: StatisticalMeshModel, burnInPhase: Int
   def meanMesh(takeEveryN: Int = 1): TriangleMesh[_3D] = {
     val indexes = (burnIn until log.length by takeEveryN).map(i => getLogIndex(i))
     val filtered = indexes.map(i => (log(i)))
-
     val nMeshes = filtered.length
     println(s"Computing mean from: ${nMeshes}/${log.length - burnIn} in steps of ${takeEveryN}")
-
-    val meanDeformations = reference.pointSet.pointIds.map(id => {
-      var meanDeformationForId = EuclideanVector(0, 0, 0)
-      filtered.foreach(l => { // loop through meshes
-        val mesh = logToMesh(l)
-        val deformationAtId = mesh.pointSet.point(id) - reference.pointSet.point(id)
-        meanDeformationForId += deformationAtId * (1.0 / nMeshes)
-      })
-      meanDeformationForId
-    })
-    val meanPoints = (reference.pointSet.points.toIndexedSeq zip meanDeformations.toIndexedSeq).map { case (p, v) => (p + v) }
-    val meanMesh = TriangleMesh3D(CreateUnstructuredPointsDomain3D.create(meanPoints).pointSet, reference.triangulation)
+    val vectorizedPoints = filtered.map { l =>
+      val mesh = logToMesh(l)
+      vectorizePointSet(mesh.pointSet)
+    }
+    val meanVector = vectorizedPoints.reduce(_ + _) * (1.0 / nMeshes)
+    val meanPoints = pointSetFromDenseVector[_3D](meanVector)
+    val meanMesh = TriangleMesh3D(meanPoints, reference.triangulation)
     meanMesh
   }
-
 }
