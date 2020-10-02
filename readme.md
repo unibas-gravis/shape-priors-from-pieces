@@ -79,3 +79,12 @@ And finally we can compare the differently created models
 - **femur/CompareModels**
 
 - **femur/RegistrationOfCompleteFemurs**: Registration of complete femurs.
+
+## Contributors
+- [Dennis Madsen](https://github.com/madsendennis)
+- [Jonathan Aellen](https://github.com/JonathanAellen)
+- [Andreas Forster](https://github.com/Andreas-Forster)
+- [Marcel Luethi](https://github.com/marcelluethi)
+
+## Dependencies
+- [scalismo](https://github.com/unibas-gravis/scalismo) `0.90-RC1`
