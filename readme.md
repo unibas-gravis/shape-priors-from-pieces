@@ -22,7 +22,10 @@ Markov Chain Monte Carlo for shape registration with examples using [Scalismo](h
 
 
 ## Overview
+The project is written in Scala and constructed to use the interactive build tool [SBT](https://www.scala-sbt.org/).
 
+After installing SBT, clone this repository to your local machine and envoke `sbt run` in the project folder. SBT will now show a list of available main files that can be executed. 
+Below is a description of the individual scripts to use. 
 ## Hand experiments
 All data for the hand experiment is already provided in the repository under **data/hand/**. The data is already landmark aligned. 
 
