@@ -25,17 +25,27 @@ Markov Chain Monte Carlo for shape registration with examples using [Scalismo](h
 
 ## Hand experiments
 All data for the hand experiment is already provided in the repository under **data/hand/**. The data is already landmark aligned. 
+
 The first step is to create partial data for the experiments:
  - **hand/preprocessing/CreatePartialData**.
+ 
 Then we need to create a *missing-data-model* (an analytically defined GPMM):
  - **hand/preprocessing/Create2DGPModel**
+
 Now that all the data is prepared, we can begin to register the partial data:
- - **hand/RegistrationSingle** registers a single partial hand (easy configurable to choose the target).
- - **hand/VisualizeLog** show the MAP/mean and random samples from a log file.
- - **hand/VisualizeHandModel** show the principal components and random samples from a 2D hand model.
+ - **hand/RegistrationSingle**: registers a single partial hand (easy configurable to choose the target).
+ - **hand/VisualizeLog**: show the MAP/mean and random samples from a log file.
+ - **hand/VisualizeHandModel**: show the principal components and random samples from a 2D hand model.
 Before we can build PDMs from multiple imputations from multiple targets, we need to register a lot of the target meshes:
- - **hand/RegistrationAll** registers all the partial data and saves a log file for each registration.
- - **hand/Logs2Meshes** helper script to convert the log file data into meshes which are then stored on the disk.
+ 
+ To register all partial hands, run the script:
+ - **hand/RegistrationAll**: a log file for each registration is created.
+ 
+ After the registrations, we can convert the log files into meshes:
+ - **hand/Logs2Meshes** helper script to convert the log file data into meshes which are then stored on the disk. By default, the script converts hands which are cut 15% from a random finger.
+ - **hand/CreatePDMsFromFiles** create PDM models from the dumped files (model from complete data, model from mean predictions, model from MAP predictions and model from random samples, i.e. multiple imputations).
+ - **hand/CompareModels** finally we can compare the created PDM models based on their specificity, generalization and compactness.
+
 
 ## Femur experiments
 The experiments are found under *apps/femur*. First we need to download the needed data from the SMIR page: 
