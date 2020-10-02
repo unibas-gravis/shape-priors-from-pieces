@@ -21,9 +21,8 @@ import scalismo.common.PointId
 import scalismo.common.interpolation.NearestNeighborInterpolator
 import scalismo.geometry.{EuclideanVector, Point, _3D}
 import scalismo.mesh.TriangleMesh
-import scalismo.registration._
 import scalismo.statisticalmodel.StatisticalMeshModel
-import scalismo.transformations.{Rotation, Scaling, Transformation, Translation, TranslationAfterRotation}
+import scalismo.transformations._
 
 case class ScaleParameter(s: Double) {
   def parameters: DenseVector[Double] = DenseVector(s)
@@ -70,8 +69,8 @@ case class ModelFittingParameters(scalaParameter: ScaleParameter, poseParameters
 object ModelFittingParameters {
 
   /**
-    * Create ModelFittingParameters using pose and shape only (scale is fixed to 1)
-    */
+   * Create ModelFittingParameters using pose and shape only (scale is fixed to 1)
+   */
   def apply(poseParameters: PoseParameters, shapeParameters: ShapeParameters): ModelFittingParameters = {
     ModelFittingParameters(ScaleParameter(1.0), poseParameters, shapeParameters)
   }

@@ -53,6 +53,10 @@ object Create2DGPModel {
     }
   }
 
+  /**
+   * creates a kernel that simulates expert knowledge on difficult shapes where the correct variability might be unknown.
+   * It is therefore an approximation of the anatomical truth for finger movement.
+   */
   def createPerpendicularModelKernel(referenceMesh: LineMesh[_2D], lmsAll: Seq[Landmark[_2D]]): MatrixValuedPDKernel[_2D] = {
     val thumb = ("finger.ulnar.middle", "finger.thumb.tip", "finger.thumb.valley")
     val index = ("finger.thumb.valley", "finger.index.tip", "finger.index.valley")
@@ -68,13 +72,6 @@ object Create2DGPModel {
       Seq((a1, m1), (a2, m2))
     })
 
-    Seq(Point2D(100.0, 250.0), Point2D(150.0, 350.0), Point2D(200.0, 400.0), Point2D(300.0, 200.0),
-      Point2D(198.0, 314.0), Point2D(337.0, 382.0), Point2D(302.0, 476.0), Point2D(198.0, 344.0), Point2D(188.0, 463.0),
-      Point2D(325.0, 306.0), Point2D(324.0, 278.0)).foreach(p => {
-      val res = getClosestBone(p, bones)
-      if (res.isDefined) println(s"id ${res.get._1} dist ${res.get._2}") else println("none found")
-    })
-
     val sigma2 = 1.0
     val amp = 50.0
     val minD = -0.01
@@ -82,9 +79,12 @@ object Create2DGPModel {
     val skeletonKernel = bones.grouped(2).zipWithIndex.map { case (finger, i) => {
       val dir = finger.head._2 + finger.last._2
       val alpha = math.acos(dir.y / dir.norm)
-      val rot = DenseMatrix((math.cos(alpha), -math.sin(alpha)), (math.sin(alpha), math.cos(alpha)))
+      //TODO check in variance visualization the direction of variance for the thumb and pinky.
+      val rot = DenseMatrix(
+        (math.cos(alpha), if (dir.x > 0.0) math.sin(alpha) else -math.sin(alpha)),
+        (if (dir.x > 0.0) -math.sin(alpha) else math.sin(alpha), math.cos(alpha))
+      )
       val dimcov = amp * rot * DenseMatrix((1.0, 0.0), (0.0, 0.1)) * rot.t
-
       new MatrixValuedPDKernel[_2D] {
         override def outputDim: Int = 2
 
@@ -93,12 +93,14 @@ object Create2DGPModel {
         override def k(x: Point[_2D], y: Point[_2D]): DenseMatrix[Double] = {
           val cx = getClosestBone(x, bones, minD, maxD)
           val cy = getClosestBone(y, bones, minD, maxD)
-          val fx = if (cx.isDefined) cx.get._1 / 2 else 0
-          val fy = if (cy.isDefined) cy.get._1 / 2 else 0
+          val fx = if (cx.isDefined) cx.get._1 / 2 else -1
+          val fy = if (cy.isDefined) cy.get._1 / 2 else -1
           if (cx.isDefined && cy.isDefined && (fx == i || fy == i)) {
             val dx = (cx.get._2 - minD) / (maxD - minD)
             val dy = (cy.get._2 - minD) / (maxD - minD)
+            //increases correlation for points on the same finger. the thumb has a smaller influence on other fingers
             val fingerPenalty = math.pow(0.5, math.abs(fx - fy) + (if (fx == 0 ^ fy == 0) 4.0 else 1.0))
+            //final covariance calculation with increased variability for points on the thumb
             fingerPenalty * dx * dy * dimcov * math.exp(-math.pow(dx - dy, 2.0) / sigma2) * (if (fx == 0 && fy == 0) 5.0 else 1.0)
           } else DenseMatrix((0.0, 0.0), (0.0, 0.0))
         }
@@ -148,6 +150,7 @@ object Create2DGPModel {
     val radialend = lmsFile.find(_.id == "finger.radial.middle").get
     val mean = (smalltip.point + radialend.point.toVector).map(_ / 2.0)
     val newlm = referenceMesh.pointSet.findClosestPoint(Point2D(mean.x, mean.y))
+    //this adds a landmark to the outer side of the little finger
     val lmsAll = lmsFile ++ Seq(new Landmark[_2D]("finger.small.valley", Point2D(newlm.point.x, newlm.point.y)))
 
     val perpendicularGP = createPerpendicularModelKernel(referenceMesh, lmsAll)

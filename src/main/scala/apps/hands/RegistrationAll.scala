@@ -23,8 +23,6 @@ import scalismo.io.{LandmarkIO, StatisticalModelIO}
 import scalismo.ui.api.ScalismoUIHeadless
 
 object RegistrationAll extends App {
-
-  println("starting app...")
   scalismo.initialize()
 
   val modelFile = new File(Paths.handPath, "hand2D_gp_s25_s50_s120_per.h5")

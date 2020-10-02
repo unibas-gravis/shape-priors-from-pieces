@@ -24,8 +24,8 @@ import scalismo.geometry._
 import scalismo.mesh.{TriangleMesh, TriangleMesh3D}
 import scalismo.numerics.UniformMeshSampler3D
 import scalismo.sampling.{ProposalGenerator, TransitionProbability}
-import scalismo.statisticalmodel.{LowRankGaussianProcess, MultivariateNormalDistribution, PointDistributionModel, StatisticalMeshModel}
-import scalismo.transformations.{RotationAfterTranslation, TranslationAfterRotation}
+import scalismo.statisticalmodel.{LowRankGaussianProcess, MultivariateNormalDistribution, StatisticalMeshModel}
+import scalismo.transformations.RotationAfterTranslation
 import scalismo.utils.Memoize
 
 case class NonRigidIcpProposal(
@@ -71,11 +71,11 @@ case class NonRigidIcpProposal(
 
 
   override def logTransitionProbability(from: ModelFittingParameters, to: ModelFittingParameters): Double = {
-      val pos = cashedPosterior(from)
+    val pos = cashedPosterior(from)
 
-      val compensatedTo = from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength
+    val compensatedTo = from.shapeParameters.parameters + (to.shapeParameters.parameters - from.shapeParameters.parameters) / stepLength
 
-      pos.logpdf(compensatedTo)
+    pos.logpdf(compensatedTo)
   }
 
 
@@ -125,11 +125,11 @@ case class NonRigidIcpProposal(
     }
 
     /**
-      * Estimate where points should move to together with a surface normal dependant noise.
-      *
-      * @param theta Current fitting parameters
-      * @return List of points, with associated deformation and normal dependant surface noise.
-      */
+     * Estimate where points should move to together with a surface normal dependant noise.
+     *
+     * @param theta Current fitting parameters
+     * @return List of points, with associated deformation and normal dependant surface noise.
+     */
     def uncertainDisplacementEstimation(theta: ModelFittingParameters)
     : IndexedSeq[(Point[_3D], EuclideanVector[_3D], MultivariateNormalDistribution)] = {
       val currentMesh = ModelFittingParameters.transformedMesh(model, theta)

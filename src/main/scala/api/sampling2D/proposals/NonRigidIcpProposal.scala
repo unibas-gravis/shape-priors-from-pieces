@@ -165,13 +165,12 @@ case class NonRigidIcpProposal(
       val correspondencesAll = if (boundaryAware) noisyCorrespondence.filter(!_._4) else noisyCorrespondence
       val correspondenceWithLM = if (useLandmarkCorrespondence) correspondencesAll ++ correspondenceLandmarkPoints else correspondencesAll
 
-
       val distinctPointIds = correspondenceWithLM.map(_._1).distinct
-      val avgDist = correspondenceWithLM.map(_._5).sum/correspondenceWithLM.length
+      val avgDist = correspondenceWithLM.map(_._5).sum / correspondenceWithLM.length
       val maxDist = correspondenceWithLM.map(_._5).max
-      val cutoff = math.min(3*avgDist,(maxDist+avgDist)/2.0)
+      val cutoff = math.min(3 * avgDist, (maxDist + avgDist) / 2.0)
 
-      val disCorrFilter = distinctPointIds.map(id => correspondenceWithLM.filter(_._1==id).minBy(_._5)).filter(_._5 <= cutoff)
+      val disCorrFilter = distinctPointIds.map(id => correspondenceWithLM.filter(_._1 == id).minBy(_._5)).filter(_._5 <= cutoff)
 
       for ((pointId, targetPoint, uncertainty, _, _) <- disCorrFilter) yield {
         val referencePoint = model.reference.pointSet.point(pointId)

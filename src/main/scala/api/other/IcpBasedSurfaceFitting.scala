@@ -31,7 +31,7 @@ import scalismo.utils.Random
 
 case class IcpBasedSurfaceFitting(model: StatisticalMeshModel, target: TriangleMesh3D, numOfSamplePoints: Int, stepLength: Double = 1.0, projectionDirection: IcpProjectionDirection, showModel: Option[StatisticalMeshModelViewControls] = None) {
   implicit val random: Random = Random(1024)
-  private val rigidIdentity = TranslationAfterRotationSpace3D(rotationCenter = Point3D(0,0,0)).identityTransformation
+  private val rigidIdentity = TranslationAfterRotationSpace3D(rotationCenter = Point3D(0, 0, 0)).identityTransformation
 
   private val transformationSpace = GaussianProcessTransformationSpace[_3D](model.gp.interpolate(NearestNeighborInterpolator()))
   private val zeroParameters = (DenseVector.zeros[Double](model.rank), rigidIdentity)
@@ -92,12 +92,10 @@ case class IcpBasedSurfaceFitting(model: StatisticalMeshModel, target: TriangleM
       }
 
       if (nbIterations > 0) {
-        try
-        {
+        try {
           recursion(newCoeff, nbIterations - 1, sigma, finalTrans)
         }
-        catch
-        {
+        catch {
           case e: Exception => {
             System.err.println(s"An error occured in IcpBasedSurfaceFitting, iteration: ${numIterations - nbIterations}) / ${numIterations}")
             System.err.println(e)

@@ -18,6 +18,7 @@ package apps.femur
 
 import java.awt.Color
 import java.io.File
+
 import apps.util.LogHelper3D
 import scalismo.io.MeshIO
 import scalismo.ui.api.{ScalismoUI, ScalismoUIHeadless}
@@ -34,7 +35,7 @@ object DumpMeshesFromLog {
 
     val (model, _) = LoadData.model()
 
-    val logFiles = new File(Paths.generalPath,"logs").listFiles(_.getName.endsWith(".json")).sorted
+    val logFiles = new File(Paths.generalPath, "logs").listFiles(_.getName.endsWith(".json")).sorted
 
     val partialPath = new File(Paths.generalPath, "partialMeshes")
     val completePath = new File(Paths.generalPath, "aligned/meshes")
@@ -79,7 +80,7 @@ object DumpMeshesFromLog {
         MeshIO.writeMesh(m, new File(randomPath, jsonFileNameNoEnding + s"_${i}_.vtk"))
       }
 
-      val ui = if(visualizeOutput) ScalismoUI(jsonFileName) else ScalismoUIHeadless()
+      val ui = if (visualizeOutput) ScalismoUI(jsonFileName) else ScalismoUIHeadless()
       val bestGroups = ui.createGroup("best")
       val sampleGroup = ui.createGroup("best")
       val gtGroup = ui.createGroup("gt")
@@ -89,7 +90,7 @@ object DumpMeshesFromLog {
       ui.show(gtGroup, complete, "complete").color = Color.ORANGE
       ui.show(gtGroup, partial, "partial").color = Color.RED
       rndShapes.take(10).zipWithIndex.foreach { case (m, i) =>
-        ui.show(sampleGroup,m, i.toString)
+        ui.show(sampleGroup, m, i.toString)
       }
 
     }

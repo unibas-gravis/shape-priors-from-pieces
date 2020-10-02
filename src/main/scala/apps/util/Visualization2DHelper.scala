@@ -24,7 +24,7 @@ import scalismo.common.{DiscreteField, UnstructuredPointsDomain}
 import scalismo.geometry.{EuclideanVector, Landmark, _2D, _3D}
 import scalismo.mesh.{LineMesh, LineMesh2D, LineMesh3D}
 import scalismo.statisticalmodel.PointDistributionModel
-import scalismo.ui.api.{Group, LandmarkView, LineMeshView, ScalismoUI, SimpleAPI, VectorFieldView}
+import scalismo.ui.api._
 
 object Visualization2DHelper {
 

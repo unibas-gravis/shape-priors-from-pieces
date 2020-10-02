@@ -19,13 +19,11 @@ package apps.hands
 import java.awt.Color
 import java.io.File
 
-import api.other.{ModelAndTargetSampling, ModelSampling, RegistrationComparison, TargetSampling}
-import api.sampling2D.evaluators.{ModelToTargetEvaluation, TargetToModelEvaluation}
-import api.sampling2D.loggers.{JSONAcceptRejectLogger, jsonLogFormat}
+import api.other.{RegistrationComparison, TargetSampling}
+import api.sampling2D.evaluators.TargetToModelEvaluation
 import api.sampling2D.{MixedProposalDistributions, ModelFittingParameters, ProductEvaluators, SamplingRegistration}
 import apps.scalismoExtension.FormatConverter
-import apps.util.{LogHelper2D, Visualization2DHelper}
-import breeze.linalg.DenseVector
+import apps.util.Visualization2DHelper
 import scalismo.geometry._
 import scalismo.io.{LandmarkIO, MeshIO}
 import scalismo.mesh._
@@ -46,8 +44,8 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
 
   private val targetLM = LandmarkIO.readLandmarksJson2D(targetLMFile).get
 
-  private val numOfEvaluatorPoints = model.reference.pointSet.numberOfPoints/2 // Used for the likelihood evaluator
-  private val numOfICPPointSamples = math.min(model.reference.pointSet.numberOfPoints/2, targetMesh.pointSet.numberOfPoints/2) // Used for the ICP proposal
+  private val numOfEvaluatorPoints = model.reference.pointSet.numberOfPoints / 2 // Used for the likelihood evaluator
+  private val numOfICPPointSamples = math.min(model.reference.pointSet.numberOfPoints / 2, targetMesh.pointSet.numberOfPoints / 2) // Used for the ICP proposal
   println(s"Number of icp points: ${numOfICPPointSamples}")
   private val proposalLm: ProposalGeneratorWithTransition[ModelFittingParameters] =
     MixedProposalDistributions.mixedProposalICP(
@@ -108,7 +106,7 @@ case class HandRegistration(model: PointDistributionModel[_2D, LineMesh], modelL
     showGT.color = Color.ORANGE
     showTarget.color = Color.RED
 
-    if(showNormals){
+    if (showNormals) {
       Visualization2DHelper.show2DLineMeshNormals(ui, modelGroup, model.reference, "normals")
       Visualization2DHelper.show2DLineMeshNormals(ui, targetGroup, targetMesh, "normals")
       Visualization2DHelper.show2DLineMeshNormals(ui, targetGroup, targetGTMesh, "normals")

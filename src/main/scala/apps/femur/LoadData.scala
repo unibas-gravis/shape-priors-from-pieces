@@ -17,6 +17,7 @@
 package apps.femur
 
 import java.io.File
+
 import apps.femur.Paths.dataFemurPath
 import scalismo.geometry.{Landmark, _3D}
 import scalismo.io.{LandmarkIO, StatisticalModelIO}

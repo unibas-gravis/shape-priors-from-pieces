@@ -16,7 +16,7 @@
 
 package api.sampling2D
 
-import api.other.{DoubleProjection, IcpProjectionDirection, ModelAndTargetSampling, ModelSampling, TargetSampling}
+import api.other._
 import api.sampling2D.proposals._
 import scalismo.geometry.{Landmark, _2D}
 import scalismo.mesh.{LineMesh, LineMesh2D}

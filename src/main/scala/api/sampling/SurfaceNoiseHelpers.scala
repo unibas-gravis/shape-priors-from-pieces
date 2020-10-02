@@ -23,12 +23,12 @@ import scalismo.statisticalmodel.MultivariateNormalDistribution
 object SurfaceNoiseHelpers {
 
   /**
-    * Calculates the multivariate normal distribution for surface normal dependant noise.
-    *
-    * @param surfaceNormal                 Normal of the surface at the given position.
-    * @param stdDevNoiseAlongSurfaceNormal Standard deviation of the noise along the normal.
-    * @param stdDevNoiseInTangentialPlane  Standard deviation of the noise in the tangent plane.
-    */
+   * Calculates the multivariate normal distribution for surface normal dependant noise.
+   *
+   * @param surfaceNormal                 Normal of the surface at the given position.
+   * @param stdDevNoiseAlongSurfaceNormal Standard deviation of the noise along the normal.
+   * @param stdDevNoiseInTangentialPlane  Standard deviation of the noise in the tangent plane.
+   */
   def surfaceNormalDependantNoise(
                                    surfaceNormal: EuclideanVector3D,
                                    stdDevNoiseAlongSurfaceNormal: Double,

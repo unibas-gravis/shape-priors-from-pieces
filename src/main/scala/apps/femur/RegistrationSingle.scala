@@ -54,7 +54,7 @@ object RegistrationSingle {
     val evaluator = ProductEvaluators.proximityAndIndependent(model, targetMesh, TargetToModelEvaluation, uncertainty = likelihoodUncertainty, numberOfEvaluationPoints = numOfEvaluatorPoints)
     val proposalIcp = MixedProposalDistributions.mixedProposalICP(model, targetMesh, numOfICPPointSamples, projectionDirection = TargetSampling, stepLength = 0.5)
 
-    val ui = if(showUI) ScalismoUI() else ScalismoUIHeadless()
+    val ui = if (showUI) ScalismoUI() else ScalismoUIHeadless()
     val modelGroup = ui.createGroup("model")
     val showModel = ui.show(modelGroup, model, "model")
 

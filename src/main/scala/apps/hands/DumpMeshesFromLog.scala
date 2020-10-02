@@ -21,57 +21,51 @@ import java.io.File
 import apps.util.LogHelper2D
 import scalismo.io.{MeshIO, StatisticalModelIO}
 
-import scala.collection.parallel.ForkJoinTaskSupport
-
 object DumpMeshesFromLog {
+  scalismo.initialize()
 
+  val logPath = Paths.handLogPath
 
-  def main(args: Array[String]) {
-    scalismo.initialize()
+  val modelFile = new File(Paths.handPath, "hand2D_gp_s25_s50_s120_per.h5")
+  val model = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
 
-    val logPath = Paths.handLogPath
+  val experimentPath = new File(Paths.handPath, s"shapemi/allFingers15pMissing")
+  experimentPath.mkdirs()
 
-    val modelFile = new File(Paths.handPath, "hand2D_gp_s25_s50_s120_per.h5")
-    val model = StatisticalModelIO.readStatisticalLineMeshModel2D(modelFile).get
+  println(s"ExperimentPATH: ${experimentPath}")
+  val randomPath = new File(experimentPath, s"samples/")
+  val meanPath = new File(experimentPath, s"mean/")
+  val mapPath = new File(experimentPath, s"map/")
+  val outPaths = Seq(randomPath, meanPath, mapPath)
+  outPaths.foreach(_.mkdir())
 
-    val experimentPath = new File(Paths.handPath, s"shapemi/allFingers15pMissing")
-    experimentPath.mkdirs()
+  val percentageCuts = Seq(15)
+  val fingerSeq = Seq("thumb", "index", "long", "ring", "small")
 
-    println(s"ExperimentPATH: ${experimentPath}")
-    val randomPath = new File(experimentPath, s"samples/")
-    val meanPath = new File(experimentPath, s"mean/")
-    val mapPath = new File(experimentPath, s"map/")
-    val outPaths = Seq(randomPath, meanPath, mapPath)
-    outPaths.foreach(_.mkdir())
+  val idSeq = 0 to 11
+  println("Targets: ")
+  val targetNames = idSeq.map(i => s"hand-${i}_${fingerSeq(i % fingerSeq.length)}_${percentageCuts(i % percentageCuts.length)}").sorted
 
-    val percentageCuts = Seq(15)
-    val fingerSeq = Seq("thumb", "index", "long", "ring", "small")
+  targetNames.foreach(f => println(s" - ${f}"))
 
-    val idSeq = 0 to 11
-    println("Targets: ")
-    val targetNames = idSeq.map(i => s"hand-${i}_${fingerSeq(i % fingerSeq.length)}_${percentageCuts(i % percentageCuts.length)}").sorted
+  targetNames.zipWithIndex.par.foreach { case (targetpartialname, sleepTime) =>
 
-    targetNames.foreach(f => println(s" - ${f}"))
+    Thread.sleep(sleepTime * 100)
 
-    targetNames.zipWithIndex.par.foreach { case (targetpartialname, sleepTime) =>
+    val burnInPhase = 200
+    val logFile = new File(logPath, targetpartialname + ".json")
+    val log = LogHelper2D(logFile, model, burnInPhase)
 
-      Thread.sleep(sleepTime * 100)
+    val rndShapes = log.sampleMeshes2D(takeEveryN = 20, total = 10000, randomize = true)
 
-      val burnInPhase = 200
-      val logFile = new File(logPath, targetpartialname + ".json")
-      val log = LogHelper2D(logFile, model, burnInPhase)
+    val best = log.mapMesh2D()
+    val mean = log.meanMesh2D(takeEveryN = 50)
 
-      val rndShapes = log.sampleMeshes2D(takeEveryN = 20, total = 10000, randomize = true)
+    MeshIO.writeLineMesh(mean, new File(meanPath, targetpartialname + "_mean.vtk"))
+    MeshIO.writeLineMesh(best, new File(mapPath, targetpartialname + "_map.vtk"))
 
-      val best = log.mapMesh2D()
-      val mean = log.meanMesh2D(takeEveryN = 50)
-
-      MeshIO.writeLineMesh(mean, new File(meanPath, targetpartialname + "_mean.vtk"))
-//      MeshIO.writeLineMesh(best, new File(mapPath, targetpartialname + "_map.vtk"))
-
-//      rndShapes.take(10).zipWithIndex.foreach { case (m, i) =>
-//        MeshIO.writeLineMesh(m, new File(randomPath, targetpartialname + s"_${i}.vtk"))
-//      }
+    rndShapes.take(50).zipWithIndex.foreach { case (m, i) =>
+      MeshIO.writeLineMesh(m, new File(randomPath, targetpartialname + s"_${i}.vtk"))
     }
   }
 }

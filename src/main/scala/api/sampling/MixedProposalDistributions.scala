@@ -21,15 +21,15 @@ import api.sampling.proposals._
 import scalismo.mesh.TriangleMesh3D
 import scalismo.sampling.proposals.MixtureProposal
 import scalismo.sampling.proposals.MixtureProposal.ProposalGeneratorWithTransition
-import scalismo.statisticalmodel.StatisticalMeshModel
 import scalismo.sampling.proposals.MixtureProposal.implicits._
+import scalismo.statisticalmodel.StatisticalMeshModel
 import scalismo.utils.Random.implicits._
 
 object MixedProposalDistributions {
 
   def mixedProposalRandom(model: StatisticalMeshModel): ProposalGeneratorWithTransition[ModelFittingParameters] = {
     val mixproposal = MixtureProposal(
-        0.5 *: RandomShapeUpdateProposal(model, 0.1, generatedBy = "RandomShape-0.1") +
+      0.5 *: RandomShapeUpdateProposal(model, 0.1, generatedBy = "RandomShape-0.1") +
         0.5 *: RandomShapeUpdateProposal(model, 0.01, generatedBy = "RandomShape-0.01") +
         0.5 *: RandomShapeUpdateProposal(model, 0.001, generatedBy = "RandomShape-0.001")
     )

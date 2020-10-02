@@ -18,7 +18,7 @@ package api.other
 
 import apps.scalismoExtension.LineMeshMetrics2D
 import scalismo.geometry.{_2D, _3D}
-import scalismo.mesh.{LineMesh, LineMesh2D, MeshMetrics, TriangleMesh, TriangleMesh3D}
+import scalismo.mesh._
 
 object RegistrationComparison {
 
