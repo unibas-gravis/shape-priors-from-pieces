@@ -155,7 +155,7 @@ object CompareModels {
 
   def main(args: Array[String]) {
     scalismo.initialize()
-    println("Compare PCAs...")
+    println("Compare Statistical PDM models...")
     val log = computeModelMetrics()
     writeLog(log, resultOutJsonLogFile)
   }
