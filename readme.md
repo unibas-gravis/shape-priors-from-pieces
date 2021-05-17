@@ -7,7 +7,13 @@ This repository contains all the code to reproduce our results from our ShaeMi20
 
 BibTex:
 ```bibtex
-Coming
+@inproceedings{madsen2020learning,
+  title={Learning Shape Priors from Pieces},
+  author={Madsen, Dennis and Aellen, Jonathan and Morel-Forster, Andreas and Vetter, Thomas and Lüthi, Marcel},
+  booktitle={International Workshop on Shape in Medical Imaging},
+  pages={30--43},
+  year={2020},
+  organization={Springer}
 }
 ```
 
